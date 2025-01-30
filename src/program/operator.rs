@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq)]
+use rand::Rng;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum Operator {
     Add = 0,
@@ -8,6 +10,8 @@ pub enum Operator {
 }
 
 impl Operator {
+    const VARIANTS: [Self; 4] = [Self::Add, Self::Sub, Self::Mul, Self::Div];
+
     pub fn execute(self, a: f64, b: f64) -> f64 {
         const UNDEFINED: f64 = 1e6;
         match self {
@@ -22,6 +26,11 @@ impl Operator {
                 }
             }
         }
+    }
+
+    pub fn random() -> Self {
+        let mut rng = rand::rng();
+        Self::VARIANTS[rng.random_range(0..Self::VARIANTS.len())]
     }
 }
 
@@ -59,5 +68,11 @@ mod tests {
         assert_eq!(sub.execute(op1, op2), 1.0);
         assert_eq!(mul.execute(op1, op2), 0.0);
         assert_eq!(div.execute(op1, op2), 1000001.0);
+    }
+
+    #[test]
+    fn test_operator_random() {
+        let op: Operator = Operator::random();
+        assert!(matches!(op, Operator::Add | Operator::Sub | Operator::Mul | Operator::Div));
     }
 }
