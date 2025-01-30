@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, PartialEq)]
 #[repr(u8)]
 pub enum Operator {
     Add = 0,
@@ -15,13 +15,49 @@ impl Operator {
             Operator::Sub => a - b,
             Operator::Mul => a * b,
             Operator::Div => {
-                // Protected division
                 if b != 0.0 {
                     a / b
                 } else {
                     a + UNDEFINED
                 }
-            },
-       } 
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_operator_standard() {
+        let add: Operator = Operator::Add;
+        let sub: Operator = Operator::Sub;
+        let mul: Operator = Operator::Mul;
+        let div: Operator = Operator::Div;
+
+        let op1 = 4.0;
+        let op2 = 5.0;
+
+        assert_eq!(add.execute(op1, op2), 9.0);
+        assert_eq!(sub.execute(op1, op2), -1.0);
+        assert_eq!(mul.execute(op1, op2), 20.0);
+        assert_eq!(div.execute(op1, op2), 0.8);
+    }
+
+    #[test]
+    fn test_operator_edge() {
+        let add: Operator = Operator::Add;
+        let sub: Operator = Operator::Sub;
+        let mul: Operator = Operator::Mul;
+        let div: Operator = Operator::Div;
+
+        let op1 = 1.0;
+        let op2 = 0.0;
+
+        assert_eq!(add.execute(op1, op2), 1.0);
+        assert_eq!(sub.execute(op1, op2), 1.0);
+        assert_eq!(mul.execute(op1, op2), 0.0);
+        assert_eq!(div.execute(op1, op2), 1000001.0);
     }
 }
