@@ -1,5 +1,7 @@
+use rand::Rng;
+
 use crate::program::operator::Operator;
-use crate::program::RegisterIndex;
+use crate::program::{RegisterIndex, TOTAL_REGISTERS};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instruction(u32);
@@ -17,6 +19,17 @@ impl Instruction {
             (opnd2 as u32);
 
         Self(packed)
+    }
+
+    pub fn random() -> Self {
+        let mut rng = rand::rng();
+
+        let operator: Operator = Operator::random();
+        let dst_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
+        let opnd1_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
+        let opnd2_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
+
+        Self::new(operator, dst_reg_index, opnd1_reg_index, opnd2_reg_index)
     }
 
     pub fn operator(&self) -> Operator {
@@ -57,6 +70,21 @@ mod tests {
         let inst: Instruction = Instruction::new(mul, dst, opnd1, opnd2);
 
         assert_eq!(inst, 0x02030405);
+    }
+
+    #[test]
+    fn test_instruction_random() {
+        let inst: Instruction = Instruction::random();
+
+        let op = inst.operator();
+        assert!(matches!(op, Operator::Add | Operator::Sub | Operator::Mul | Operator::Div));
+
+        let dst: RegisterIndex = inst.dst();
+        assert!(dst < (TOTAL_REGISTERS as u8));
+
+        let opnds: [RegisterIndex; 2] = inst.operands();
+        assert!(opnds[0] < (TOTAL_REGISTERS as u8));
+        assert!(opnds[1] < (TOTAL_REGISTERS as u8));
     }
 
     #[test]
