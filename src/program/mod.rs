@@ -1,5 +1,8 @@
-pub mod operator;
-pub mod instruction;
+mod operator;
+mod instruction;
 
 // Register configuration
-pub type RegisterIndex = u8;
+type RegisterIndex = u8;
+pub const TOTAL_REGISTERS: usize = 8;
+pub const INPUT_REGISTER: RegisterIndex = 1;
+pub const OUTPUT_REGISTER: RegisterIndex = 0;
