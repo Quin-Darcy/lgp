@@ -12,3 +12,4 @@ name = "lgp_cli"
 path = "src/main.rs"
 
 [dependencies]
+rand = "0.9.0"
