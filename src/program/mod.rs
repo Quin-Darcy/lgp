@@ -24,7 +24,7 @@ impl Program {
     pub fn new(initial_size: usize) -> Self {
         let mut program = Self {
             instructions: Vec::new(),
-            var_registers: [0.0; TOTAL_VAR_REGISTERS],
+            var_registers: [1.0; TOTAL_VAR_REGISTERS],
             const_registers: [0.0; TOTAL_CONST_REGISTERS]
         };
 
@@ -32,10 +32,20 @@ impl Program {
             .take(initial_size)
             .collect();
 
+        // Equal step range from lower to upper
+        let lower: f64 = CONST_LOWER_BOUND as f64;
+        let upper: f64 = CONST_UPPER_BOUND as f64;
+        let step: f64 = (upper - lower) / (TOTAL_CONST_REGISTERS as f64);
+        program.const_registers = std::array::from_fn(|i| lower + (i as f64) * step);
+
+        /*
+        // Random values picked from range
         program.const_registers.iter_mut()
             .zip(CONST_LOWER_BOUND as i32..=CONST_UPPER_BOUND as i32)
             .for_each(|(reg, val)| *reg = val as f64);
 
+        */
+        println!("0: {:?}; 1: {:?}, 51: {:?}", program.const_registers[0], program.const_registers[1], program.const_registers[51]);
         program
     }
 
@@ -63,12 +73,29 @@ impl Program {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_program_new() {
         let initial_size: usize = 12;
         let program = Program::new(initial_size);
 
         assert_eq!(program.instructions.len(), initial_size);
+    }
+
+    #[test]
+    fn test_program_run() {
+        let input: f64 = 3.0;
+        let inst1 = Instruction(0x00023901);
+        let inst2 = Instruction(0x02033C02);
+        let inst3 = Instruction(0x03040302);
+        let inst4 = Instruction(0x03053B3C);
+        let inst5 = Instruction(0x0100043D);
+        let inst6 = Instruction(0x01000005);
+
+        let inst_vec: Vec<Instruction> = vec![inst1, inst2, inst3, inst4, inst5, inst6];
+
+        let mut prog = Program::new(6);
+        prog.instructions = inst_vec;
+
+        assert_eq!(prog.run(input), -1.5);
     }
 }
