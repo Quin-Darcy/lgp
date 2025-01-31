@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::program::operator::Operator;
-use crate::program::{RegisterIndex, TOTAL_REGISTERS};
+use crate::program::{RegisterIndex, TOTAL_VAR_REGISTERS, TOTAL_CONST_REGISTERS};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instruction(u32);
@@ -25,9 +25,12 @@ impl Instruction {
         let mut rng = rand::rng();
 
         let operator: Operator = Operator::random();
-        let dst_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
-        let opnd1_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
-        let opnd2_reg_index: RegisterIndex = rng.random_range(..TOTAL_REGISTERS) as RegisterIndex;
+        let dst_reg_index: RegisterIndex = rng.random_range(..TOTAL_VAR_REGISTERS) as RegisterIndex;
+
+        // If the reg index > TOTAL_VAR_REGISTERS, it is a const reg index. After this
+        // determination, offset by subtracting off TOTAL_VAR_REGISERS
+        let opnd1_reg_index: RegisterIndex = rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS)) as RegisterIndex;
+        let opnd2_reg_index: RegisterIndex = rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS)) as RegisterIndex;
 
         Self::new(operator, dst_reg_index, opnd1_reg_index, opnd2_reg_index)
     }
@@ -80,11 +83,11 @@ mod tests {
         assert!(matches!(op, Operator::Add | Operator::Sub | Operator::Mul | Operator::Div));
 
         let dst: RegisterIndex = inst.dst();
-        assert!(dst < (TOTAL_REGISTERS as u8));
+        assert!(dst < (TOTAL_VAR_REGISTERS as u8));
 
         let opnds: [RegisterIndex; 2] = inst.operands();
-        assert!(opnds[0] < (TOTAL_REGISTERS as u8));
-        assert!(opnds[1] < (TOTAL_REGISTERS as u8));
+        assert!(opnds[0] < ((TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS) as u8));
+        assert!(opnds[1] < ((TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS) as u8));
     }
 
     #[test]
