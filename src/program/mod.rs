@@ -4,10 +4,10 @@
 //! are represented and executed. Each program consists of:
 //! 
 //! - A sequence of register-based instructions
-//! - Variable registers for computation
+//! - Variable registers for calculations
 //! - Constant registers with fixed values
 //! 
-//! Programs take a single f64 input and produce a single f64 output, making them
+//! Programs take a single input and produce a single output, making them
 //! suitable for evolving mathematical functions.
 //! 
 //! # Example
@@ -102,7 +102,8 @@ impl Program {
         program
     }
 
-    /// Executes the sequences of instructions on given input.
+    /// Executes the sequences of instructions on given input and returns the final output of the
+    /// program, given the input.
     ///
     /// # Arguments
     /// * `input`: Input value which the program will operate on.
