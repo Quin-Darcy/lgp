@@ -1,3 +1,27 @@
+//! Individual program representation and execution.
+//! 
+//! This module defines how individual programs in the genetic programming system
+//! are represented and executed. Each program consists of:
+//! 
+//! - A sequence of register-based instructions
+//! - Variable registers for computation
+//! - Constant registers with fixed values
+//! 
+//! Programs take a single f64 input and produce a single f64 output, making them
+//! suitable for evolving mathematical functions.
+//! 
+//! # Example
+//! 
+//! ```
+//! use lgp::program::Program;
+//! 
+//! // Create a program with 5 instructions
+//! let mut program = Program::new(5);
+//! 
+//! // Run the program with input 2.0
+//! let output = program.run(2.0);
+//! ```
+
 mod operator;
 mod instruction;
 
@@ -5,16 +29,40 @@ use instruction::Instruction;
 
 // Register configuration
 type RegisterIndex = u8;
+
+/// Constant which defines the total number of variable or 'calculation'
+/// registers used by any program. Variable registers can be both read from and written to. Variable registers are initialized with a constant value. Careful consideration should be made when setting this parameter. Especially if input and output registers are low, sufficient registers is important for performance.
 pub const TOTAL_VAR_REGISTERS: usize = 8;
+
+/// Constant which defines the number of constant registers used by the program. Constant registers contain values from a specified range. The constant registers are read-only and present an efficient way to allow a range of values to be introduced into the test case.
 pub const TOTAL_CONST_REGISTERS: usize = 100;
+
+/// Before any program is run, its variable register at the index defined by this parameter
+/// will be initialized with the given input.
 pub const INPUT_REGISTER: usize = 1;
+
+/// After a program is run, what is considered the "output" of the program is defined as the value
+/// stored at this index in the program's variable registers.
 pub const OUTPUT_REGISTER: usize = 0;
+
+/// Value which defines the lower bound on the values which populate the program's constant
+/// registers.
 pub const CONST_LOWER_BOUND: f64 = -50.0;
+
+/// Value which defines the upper bound on the values which populate the program's constant
+/// registers.
 pub const CONST_UPPER_BOUND: f64 = 50.0;
 
 // TODO: Validate that the total number of registers (const and var) are less than 256
 // since RegisterIndex is defined as a u8 with a max value of 256
 
+/// The struct which defines the Program. It contains 3 members:
+/// - `instructions`: This is the sequence of arithmetic instructions which will execute when the
+/// program is run
+/// - `var_registers`: These are initialized with a constant value at the begining of each test
+/// case and are subsequently used for calculation through the running of a program.
+/// - `const_registers`: These hold a range of read-only constants to be pulled into the
+/// calculations during the running of the program.
 pub struct Program {
     instructions: Vec<Instruction>,
     var_registers: [f64; TOTAL_VAR_REGISTERS],
@@ -22,6 +70,10 @@ pub struct Program {
 }
 
 impl Program {
+    /// Create a new Program.
+    ///
+    /// # Arguments
+    /// * `initial_size`: The number of instructions the new program will be initialized with.
     #[allow(clippy::cast_precision_loss)]
     pub fn new(initial_size: usize) -> Self {
         let mut program = Self {
@@ -50,6 +102,10 @@ impl Program {
         program
     }
 
+    /// Executes the sequences of instructions on given input.
+    ///
+    /// # Arguments
+    /// * `input`: Input value which the program will operate on.
     #[allow(clippy::missing_panics_doc)]
     pub fn run(&mut self, input: f64) -> f64 {
         self.var_registers[INPUT_REGISTER] = input;

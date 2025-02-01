@@ -1,3 +1,16 @@
+//! Basic arithmetic operations available to evolving programs.
+//! 
+//! These operators form the basic building blocks from which more complex
+//! mathematical functions can be evolved. The operator set is intentionally
+//! small to maintain a focused search space while still allowing for the
+//! expression of a wide range of mathematical functions.
+
+/// Available arithmetic operations for program instructions.
+/// 
+/// Each operator performs a basic arithmetic operation on two operands.
+/// The operator set is deliberately minimal to maintain a focused search
+/// space while still allowing programs to evolve complex mathematical
+/// relationships.
 use rand::Rng;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

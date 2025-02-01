@@ -1,3 +1,37 @@
+//! Instructions that form the genetic material of programs.
+//! 
+//! Instructions are the basic units that can be modified through genetic operations
+//! (mutation and crossover). Each instruction is encoded as a 32-bit value that 
+//! specifies an operation and the registers it operates on.
+
+/// A single instruction in a program's instruction sequence.
+/// 
+/// Instructions are the basic units that can be modified through genetic operations.
+/// Each instruction performs one arithmetic operation, taking values from two source
+/// registers and storing the result in a destination register.
+/// 
+/// # Bit Layout
+/// 
+/// The instruction is packed into a 32-bit integer with the following layout:
+/// - Bits 24-31: Operator (8 bits)
+/// - Bits 16-23: Destination register index (8 bits)
+/// - Bits 8-15:  First operand register index (8 bits)
+/// - Bits 0-7:   Second operand register index (8 bits)
+/// 
+/// This compact representation allows for efficient storage and manipulation during
+/// genetic operations.
+/// 
+/// # Examples
+/// 
+/// ```
+/// # use lgp::program::{instruction::Instruction, operator::Operator};
+/// // Create a multiplication instruction: dst[3] = reg[4] * reg[5]
+/// let inst = Instruction::new(Operator::Mul, 3, 4, 5);
+/// 
+/// // Instructions can be randomly generated for initial population
+/// let random_inst = Instruction::random();
+/// ```
+
 use rand::Rng;
 
 use crate::program::operator::Operator;
