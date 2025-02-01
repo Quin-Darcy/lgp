@@ -19,10 +19,10 @@ impl Operator {
             Operator::Sub => a - b,
             Operator::Mul => a * b,
             Operator::Div => {
-                if b != 0.0 {
-                    a / b
-                } else {
+                if b == 0.0 {
                     a + UNDEFINED
+                } else {
+                    a / b
                 }
             }
         }

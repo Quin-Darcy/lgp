@@ -13,6 +13,7 @@ pub const CONST_LOWER_BOUND: f64 = -50.0;
 pub const CONST_UPPER_BOUND: f64 = 50.0;
 
 // TODO: Validate that the total number of registers (const and var) are less than 256
+// since RegisterIndex is defined as a u8 with a max value of 256
 
 pub struct Program {
     instructions: Vec<Instruction>,
@@ -21,6 +22,7 @@ pub struct Program {
 }
 
 impl Program {
+    #[allow(clippy::cast_precision_loss)]
     pub fn new(initial_size: usize) -> Self {
         let mut program = Self {
             instructions: Vec::new(),
@@ -33,8 +35,8 @@ impl Program {
             .collect();
 
         // Equal step range from lower to upper
-        let lower: f64 = CONST_LOWER_BOUND as f64;
-        let upper: f64 = CONST_UPPER_BOUND as f64;
+        let lower: f64 = CONST_LOWER_BOUND;
+        let upper: f64 = CONST_UPPER_BOUND;
         let step: f64 = (upper - lower) / (TOTAL_CONST_REGISTERS as f64);
         program.const_registers = std::array::from_fn(|i| lower + (i as f64) * step);
 
@@ -45,13 +47,23 @@ impl Program {
             .for_each(|(reg, val)| *reg = val as f64);
 
         */
-        println!("0: {:?}; 1: {:?}, 51: {:?}", program.const_registers[0], program.const_registers[1], program.const_registers[51]);
         program
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn run(&mut self, input: f64) -> f64 {
         self.var_registers[INPUT_REGISTER] = input;
-        for inst in self.instructions.iter() {
+        for inst in &self.instructions {
+            let mut operands = [0.0; 2];
+            for (i, &idx) in inst.operands().iter().enumerate() {
+                operands[i] = if idx < u8::try_from(TOTAL_VAR_REGISTERS).expect("Failed to cast to u8") {
+                    self.var_registers[idx as usize]
+                } else {
+                    self.const_registers[(idx as usize) - TOTAL_VAR_REGISTERS]
+                };
+            }
+
+            /*
             let operands: Vec<f64> = inst.operands()
                 .iter()
                 .map(|&idx| {
@@ -62,7 +74,7 @@ impl Program {
                     }
                 })
                 .collect();
-
+            */
                 self.var_registers[inst.dst() as usize] = inst.operator().execute(operands[0], operands[1]);
         }
         self.var_registers[OUTPUT_REGISTER]

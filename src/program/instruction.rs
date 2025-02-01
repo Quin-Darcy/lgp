@@ -4,7 +4,7 @@ use crate::program::operator::Operator;
 use crate::program::{RegisterIndex, TOTAL_VAR_REGISTERS, TOTAL_CONST_REGISTERS};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Instruction(u32);
+pub struct Instruction(pub u32);
 
 impl Instruction {
     pub fn new(
@@ -14,9 +14,9 @@ impl Instruction {
         opnd2: RegisterIndex
     ) -> Self {
         let packed = (op as u32) << 24 |
-            (dst as u32) << 16 |
-            (opnd1 as u32) << 8 |
-            (opnd2 as u32);
+            u32::from(dst) << 16 |
+            u32::from(opnd1) << 8 |
+            u32::from(opnd2);
 
         Self(packed)
     }
@@ -25,12 +25,12 @@ impl Instruction {
         let mut rng = rand::rng();
 
         let operator: Operator = Operator::random();
-        let dst_reg_index: RegisterIndex = rng.random_range(..TOTAL_VAR_REGISTERS) as RegisterIndex;
+        let dst_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..TOTAL_VAR_REGISTERS)).expect("Failed to cast to RegisterIndex");
 
         // If the reg index > TOTAL_VAR_REGISTERS, it is a const reg index. After this
         // determination, offset by subtracting off TOTAL_VAR_REGISERS
-        let opnd1_reg_index: RegisterIndex = rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS)) as RegisterIndex;
-        let opnd2_reg_index: RegisterIndex = rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS)) as RegisterIndex;
+        let opnd1_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS))).expect("Failed to cast to RegisterIndex");
+        let opnd2_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS))).expect("Failed to cast to RegisterIndex");
 
         Self::new(operator, dst_reg_index, opnd1_reg_index, opnd2_reg_index)
     }
@@ -41,13 +41,13 @@ impl Instruction {
     }
 
     pub fn dst(&self) -> RegisterIndex {
-        ((self.0 & 0x00FF0000) >> 16) as RegisterIndex
+        ((self.0 & 0x00FF_0000) >> 16) as RegisterIndex
 
     }
 
     pub fn operands(&self) -> [RegisterIndex; 2] {
-        let opnd1: RegisterIndex = ((self.0 & 0x0000FF00) >> 8) as RegisterIndex;
-        let opnd2: RegisterIndex = (self.0 & 0x000000FF) as RegisterIndex;
+        let opnd1: RegisterIndex = ((self.0 & 0x0000_FF00) >> 8) as RegisterIndex;
+        let opnd2: RegisterIndex = (self.0 & 0x0000_00FF) as RegisterIndex;
         [opnd1, opnd2]
     }
 }
