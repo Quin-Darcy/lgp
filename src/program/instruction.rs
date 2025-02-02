@@ -38,11 +38,25 @@ use rand::Rng;
 use crate::program::operator::Operator;
 use crate::program::{RegisterIndex, TOTAL_VAR_REGISTERS, TOTAL_CONST_REGISTERS};
 
+/// Instruction representation as 32-bit integer. Encodes the following information
+///
+/// - Operator: One of the possible arithmetic operators.
+/// - Destination Register: Index for the destination register.
+/// - Operand 1: Index for the first operand.
+/// - Operand 2: Index for the second operand.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instruction(pub u32);
 
 impl Instruction {
-    pub fn new(
+    /// Create new instruction.
+    ///
+    /// # Arguments:
+    /// - `op`: Arithmetic operator
+    /// - `dst`: Index of destination register.
+    /// - `opnd1`: Index of first operand.
+    /// - `opnd2`: Index of second operand.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use] pub fn new(
         op: Operator,
         dst: RegisterIndex,
         opnd1: RegisterIndex,
@@ -56,7 +70,9 @@ impl Instruction {
         Self(packed)
     }
 
-    pub fn random() -> Self {
+    /// Generate random instruction.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use] pub fn random() -> Self {
         let mut rng = rand::rng();
 
         let operator: Operator = Operator::random();
@@ -70,17 +86,20 @@ impl Instruction {
         Self::new(operator, dst_reg_index, opnd1_reg_index, opnd2_reg_index)
     }
 
-    pub fn operator(&self) -> Operator {
+    /// Parses instruction and returns the operator.
+    #[must_use] pub fn operator(&self) -> Operator {
         let op_num: u8 = (self.0 >> 24) as u8;
         unsafe { std::mem::transmute::<u8, Operator>(op_num) }
     }
 
-    pub fn dst(&self) -> RegisterIndex {
+    /// Parses instruction and returns the destination register index.
+    #[must_use] pub fn dst(&self) -> RegisterIndex {
         ((self.0 & 0x00FF_0000) >> 16) as RegisterIndex
 
     }
 
-    pub fn operands(&self) -> [RegisterIndex; 2] {
+    /// Parses instruction and returns indices of operands.
+    #[must_use] pub fn operands(&self) -> [RegisterIndex; 2] {
         let opnd1: RegisterIndex = ((self.0 & 0x0000_FF00) >> 8) as RegisterIndex;
         let opnd2: RegisterIndex = (self.0 & 0x0000_00FF) as RegisterIndex;
         [opnd1, opnd2]
@@ -112,14 +131,14 @@ impl fmt::Display for Instruction {
         { 
             "VR" 
         } else {
-            opnd_idx1 = opnd_idx1 - TOTAL_VAR_REGISTERS;
+            opnd_idx1 -= TOTAL_VAR_REGISTERS;
             "CR"
         };
 
         let reg_type2 = if opnd_idx2 < TOTAL_VAR_REGISTERS {
             "VR"
         } else {
-            opnd_idx2 = opnd_idx2 - TOTAL_VAR_REGISTERS;
+            opnd_idx2 -= TOTAL_VAR_REGISTERS;
             "CR"
         };
 

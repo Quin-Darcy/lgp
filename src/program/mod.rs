@@ -25,7 +25,6 @@
 mod operator;
 pub mod instruction;
 
-use std::fmt;
 use instruction::Instruction;
 
 // Register configuration
@@ -62,6 +61,7 @@ pub const CONST_UPPER_BOUND: f64 = 50.0;
 /// - `var_registers`: These are initialized with a constant value at the begining of each test case and are subsequently used for calculation through the running of a program.
 /// - `const_registers`: These hold a range of read-only constants to be pulled into the calculations during the running of the program.
 pub struct Program {
+    /// Vector holding the sequence of Instructions which defines the Program.
     pub instructions: Vec<Instruction>,
     var_registers: [f64; TOTAL_VAR_REGISTERS],
     const_registers: [f64; TOTAL_CONST_REGISTERS],
@@ -127,7 +127,7 @@ impl Program {
     /// To display the instructions of the program in human-readable form
     pub fn display(&self) {
         for inst in &self.instructions {
-            println!("{}", inst);
+            println!("{inst}");
         }
     }
 }
