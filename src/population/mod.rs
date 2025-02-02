@@ -101,14 +101,9 @@ impl Population {
     }
 
     // Selects k indices from n of them without replacement
-    fn select_no_replacement(&self, n: usize, k: usize) -> Vec<usize> {
-        if k > n {
-            panic!("Cannot select more items than available.");
-        }
-
-        if k == 0 {
-            panic!("Tournament size must be greater than zero");
-        }
+    fn select_no_replacement(n: usize, k: usize) -> Vec<usize> {
+        assert!(k <= n, "Cannot select more items than available.");
+        assert!(k != 0, "k must be greater than 0.");
 
         let mut rng = rand::rng();
 
