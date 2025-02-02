@@ -111,7 +111,14 @@ impl Population {
         let first_group = &random_indices[..TOURNAMENT_SIZE];
         let second_group = &random_indices[..TOURNAMENT_SIZE];
 
-        todo!()
+        // Run the two tounrnaments
+        let first_results: (usize, usize) = self.compete(first_group);
+        let second_results: (usize, usize) = self.compete(second_group);
+
+        TournamentResult {
+            winners: [first_results.0, second_results.0],
+            losers: [first_results.1, second_results.1]
+        }
         
     }
 
