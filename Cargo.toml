@@ -11,5 +11,15 @@ path = "src/lib.rs"
 name = "lgp_cli"
 path = "src/main.rs"
 
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "program_benchmarks"
+harness = false
+
+[profile.release]
+debug = true
+
 [dependencies]
 rand = "0.9.0"
