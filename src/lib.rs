@@ -36,18 +36,22 @@
 //! The library is organized into two main modules:
 //! 
 //! - [`program`]: Defines the structure and execution of individual programs
+//! - [`population`]: Structures and methods behind main evolution engine.
 //!
 //! # Example
 //!
 //! ```
+//! use lgp::Population;
 //! use lgp::Program;
 //! 
-//! // Create a program with 5 instructions
-//! let mut program = Program::new(5);
+//! // Example training data
+//! let training_data: Vec<(f64, f64)> = vec![(1.0, 2.0), (2.0, 4.0)];
+//!
+//! // Create a population of 40 Programs
+//! let mut pop = Population::new(40);
 //! 
-//! // Run the program with input 2.0
-//! let output = program.run(2.0);
-//! # assert!(output.is_finite());
+//! // Evolve a program against training data
+//! let mut prog: Program = pop.evolve(&training_data)
 //! ```
 
 pub mod program;
