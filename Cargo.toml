@@ -15,7 +15,7 @@ path = "src/main.rs"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]
-name = "program_benchmarks"
+name = "benchmarks"
 harness = false
 
 [profile.release]
