@@ -29,7 +29,10 @@
 //! let program: Program = population.evolve(training_data);
 //! ```
 
+mod fitness; 
+
 use crate::program::Program;
+use fitness::mse; 
 
 /// This is the initial size used for each Program in the set of individuals.
 const PROGRAM_SIZE: usize = 20; 
@@ -37,7 +40,8 @@ const PROGRAM_SIZE: usize = 20;
 /// Structure containing the population of Programs.
 pub struct Population {
     /// Vector containing the population of Programs.
-    pub individuals: Vec<Program>
+    pub individuals: Vec<Program>,
+    fitnesses: Vec<f64>
 }
 
 impl Population {
@@ -52,7 +56,8 @@ impl Population {
         }
 
         Self {
-            individuals: indvs
+            individuals: indvs,
+            fitnesses: vec![0.0; population_size]
         }
     }
 
@@ -69,6 +74,8 @@ impl Population {
         * 4. Fill population with new individuals from last step.
         * 5. Repeat until individual fitness high enough.
         */
+        
+
 
         todo!()
     }
