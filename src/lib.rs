@@ -51,3 +51,4 @@
 //! ```
 
 pub mod program;
+pub mod population;
