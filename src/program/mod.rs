@@ -23,8 +23,9 @@
 //! ```
 
 mod operator;
-mod instruction;
+pub mod instruction;
 
+use std::fmt;
 use instruction::Instruction;
 
 // Register configuration
@@ -57,14 +58,11 @@ pub const CONST_UPPER_BOUND: f64 = 50.0;
 // since RegisterIndex is defined as a u8 with a max value of 256
 
 /// The struct which defines the Program. It contains 3 members:
-/// - `instructions`: This is the sequence of arithmetic instructions which will execute when the
-/// program is run
-/// - `var_registers`: These are initialized with a constant value at the begining of each test
-/// case and are subsequently used for calculation through the running of a program.
-/// - `const_registers`: These hold a range of read-only constants to be pulled into the
-/// calculations during the running of the program.
+/// - `instructions`: This is the sequence of arithmetic instructions which will execute when the program is run:
+/// - `var_registers`: These are initialized with a constant value at the begining of each test case and are subsequently used for calculation through the running of a program.
+/// - `const_registers`: These hold a range of read-only constants to be pulled into the calculations during the running of the program.
 pub struct Program {
-    instructions: Vec<Instruction>,
+    pub instructions: Vec<Instruction>,
     var_registers: [f64; TOTAL_VAR_REGISTERS],
     const_registers: [f64; TOTAL_CONST_REGISTERS],
 }
@@ -120,23 +118,20 @@ impl Program {
                 };
             }
 
-            /*
-            let operands: Vec<f64> = inst.operands()
-                .iter()
-                .map(|&idx| {
-                    if idx < TOTAL_VAR_REGISTERS as u8 {
-                        self.var_registers[idx as usize]
-                    } else {
-                        self.const_registers[(idx as usize) - TOTAL_VAR_REGISTERS]
-                    }
-                })
-                .collect();
-            */
-                self.var_registers[inst.dst() as usize] = inst.operator().execute(operands[0], operands[1]);
+                self.var_registers[inst.dst() as usize] = inst.operator()
+                    .execute(operands[0], operands[1]);
         }
         self.var_registers[OUTPUT_REGISTER]
     }
+
+    /// To display the instructions of the program in human-readable form
+    pub fn display(&self) {
+        for inst in &self.instructions {
+            println!("{}", inst);
+        }
+    }
 }
+
 
 #[cfg(test)]
 mod tests {

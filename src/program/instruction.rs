@@ -32,6 +32,7 @@
 /// let random_inst = Instruction::random();
 /// ```
 
+use std::fmt;
 use rand::Rng;
 
 use crate::program::operator::Operator;
@@ -90,6 +91,48 @@ impl Instruction {
 impl PartialEq<u32> for Instruction {
     fn eq(&self, other: &u32) -> bool {
         self.0 == *other
+    }
+}
+
+// For displaying the instruction in human-readable form
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let symbol = match self.operator() {
+            Operator::Add => "+",
+            Operator::Sub => "-",
+            Operator::Mul => "*",
+            Operator::Div => "/"
+        };
+
+        let opnds: [RegisterIndex; 2] = self.operands();
+        let mut opnd_idx1 = usize::from(opnds[0]);
+        let mut opnd_idx2 = usize::from(opnds[1]);
+
+        let reg_type1 = if opnd_idx1 < TOTAL_VAR_REGISTERS 
+        { 
+            "VR" 
+        } else {
+            opnd_idx1 = opnd_idx1 - TOTAL_VAR_REGISTERS;
+            "CR"
+        };
+
+        let reg_type2 = if opnd_idx2 < TOTAL_VAR_REGISTERS {
+            "VR"
+        } else {
+            opnd_idx2 = opnd_idx2 - TOTAL_VAR_REGISTERS;
+            "CR"
+        };
+
+        write!(
+            f, 
+            "VR[{:?}] = {}[{:?}] {} {}[{:?}]", 
+            self.dst(), 
+            reg_type1,
+            opnd_idx1,
+            symbol,
+            reg_type2,
+            opnd_idx2
+        )
     }
 }
 
