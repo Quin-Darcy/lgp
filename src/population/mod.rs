@@ -100,7 +100,35 @@ impl Population {
         }
     }
 
-    // Selects k indices from n of them without replacement
+    fn tournament_selection(&mut self) -> TournamentResult {
+        // Get 2 * TOURNAMENT_SIZE many random individuals from population
+        let random_indices: Vec<usize> = Population::select_no_replacement(
+            self.individuals.len(),
+            2 * TOURNAMENT_SIZE
+        );
+
+        // Split the group into halves
+        let first_group = &random_indices[..TOURNAMENT_SIZE];
+        let second_group = &random_indices[..TOURNAMENT_SIZE];
+
+        todo!()
+        
+    }
+
+    // Return highest (lowest) fitness among given group
+    fn compete(&self, indices: &[usize]) -> usize {
+        let mut current_best = f64::MAX;
+        let mut winner: usize = 0;
+        for i in indices {
+            if self.fitnesses[*i] < current_best {
+                current_best = self.fitnesses[*i];
+                winner = *i;
+            }
+        }
+        winner
+    }
+
+    // Selects k indices from n of them, without replacement
     fn select_no_replacement(n: usize, k: usize) -> Vec<usize> {
         assert!(k <= n, "Cannot select more items than available.");
         assert!(k != 0, "k must be greater than 0.");
