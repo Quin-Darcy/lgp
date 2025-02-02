@@ -32,10 +32,19 @@
 mod fitness; 
 
 use crate::program::Program;
-use fitness::mse; 
+use fitness::mse;
+use rand::Rng;
 
 /// This is the initial size used for each Program in the set of individuals.
 const PROGRAM_SIZE: usize = 20; 
+
+/// Sets the size of the tournament groups. The bigger it is relative to population size, the greater the selection pressure but more pressure means less diversity.
+const TOURNAMENT_SIZE: usize = 5;
+
+struct TournamentResult {
+    winners: [usize; 2],
+    losers: [usize; 2]
+}
 
 /// Structure containing the population of Programs.
 pub struct Population {
@@ -89,7 +98,32 @@ impl Population {
         for i in 0..training_data.len() {
             self.fitnesses[i] = mse(&mut self.individuals[i], training_data);
         }
-    } 
+    }
+
+    // Selects k indices from n of them without replacement
+    fn select_no_replacement(&self, n: usize, k: usize) -> Vec<usize> {
+        if k > n {
+            panic!("Cannot select more items than available.");
+        }
+
+        if k == 0 {
+            panic!("Tournament size must be greater than zero");
+        }
+
+        let mut rng = rand::rng();
+
+        // Create vector of all indices
+        let mut indices: Vec<usize> = Vec::with_capacity(n);
+        indices.extend(0..n);
+
+        for i in 0..k {
+            let j = rng.random_range(i..n);
+            indices.swap(i, j);
+        }
+
+        indices.truncate(k);
+        indices
+   } 
 }
 
 #[cfg(test)]
