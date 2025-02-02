@@ -65,7 +65,7 @@ impl Population {
     ///
     /// # Arguments
     /// * `training_data`: Set of data points against which the population's fitness is measured.
-    pub fn evolve(training_data: &Vec<(f64, f64)>) -> Program {
+    pub fn evolve(&mut self, training_data: Vec<(f64, f64)>) -> Program {
        /*
         * The main loop will consist of the following steps:
         * 1. Evaluate fitness of each individual.
@@ -74,11 +74,21 @@ impl Population {
         * 4. Fill population with new individuals from last step.
         * 5. Repeat until individual fitness high enough.
         */
-        
 
-
+        self.eval_fitness(&training_data);
         todo!()
     }
+
+    /// Computes the fitness value for each program and stores it.
+    ///
+    /// # Arguments
+    /// * `training_data`: Data points against which fitness is measured
+    pub fn eval_fitness(&mut self, training_data: &[(f64, f64)]) {
+        
+        for i in 0..training_data.len() {
+            self.fitnesses[i] = mse(&mut self.individuals[i], training_data);
+        }
+    } 
 }
 
 #[cfg(test)]
