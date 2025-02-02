@@ -49,6 +49,7 @@ impl Population {
     ///
     /// # Arguments
     /// * `population_size`: The number of individuals in the population.
+    #[must_use]
     pub fn new(population_size: usize) -> Self {
         let mut indvs: Vec<Program> = Vec::with_capacity(population_size);
         for _ in 0..population_size {
@@ -65,7 +66,7 @@ impl Population {
     ///
     /// # Arguments
     /// * `training_data`: Set of data points against which the population's fitness is measured.
-    pub fn evolve(&mut self, training_data: Vec<(f64, f64)>) -> Program {
+    pub fn evolve(&mut self, training_data: &[(f64, f64)]) -> Program {
        /*
         * The main loop will consist of the following steps:
         * 1. Evaluate fitness of each individual.
@@ -75,7 +76,7 @@ impl Population {
         * 5. Repeat until individual fitness high enough.
         */
 
-        self.eval_fitness(&training_data);
+        self.eval_fitness(training_data);
         todo!()
     }
 

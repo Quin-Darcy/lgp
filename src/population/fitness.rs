@@ -1,5 +1,6 @@
 use crate::program::Program;
 
+#[allow(clippy::cast_precision_loss)]
 pub fn mse(p: &mut Program, training_data: &[(f64, f64)]) -> f64 {
     if training_data.is_empty() {
         return 0.0;
