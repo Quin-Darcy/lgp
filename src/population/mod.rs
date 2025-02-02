@@ -116,16 +116,23 @@ impl Population {
     }
 
     // Return highest (lowest) fitness among given group
-    fn compete(&self, indices: &[usize]) -> usize {
+    fn compete(&self, indices: &[usize]) -> (usize, usize) {
         let mut current_best = f64::MAX;
+        let mut current_worst = f64::MIN;
         let mut winner: usize = 0;
+        let mut loser: usize = 0;
         for i in indices {
             if self.fitnesses[*i] < current_best {
                 current_best = self.fitnesses[*i];
                 winner = *i;
             }
+
+            if self.fitnesses[*i] > current_worst {
+                current_worst = self.fitnesses[*i];
+                loser = *i;
+            }
         }
-        winner
+        (winner, loser)
     }
 
     // Selects k indices from n of them, without replacement
