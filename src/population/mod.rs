@@ -41,6 +41,15 @@ const PROGRAM_SIZE: usize = 20;
 /// Sets the size of the tournament groups. The bigger it is relative to population size, the greater the selection pressure but more pressure means less diversity.
 const TOURNAMENT_SIZE: usize = 5;
 
+/// Sets the rate at which new offspring are created via crossover.
+const CROSSOVER_RATE: f64 = 0.78;
+
+/// Sets the rate at which new offspring are created via mutation.
+const MUTATION_RATE: f64 = 1.0 - CROSSOVER_RATE;
+
+/// Sets the rate at which winners are reproduced.
+const REPRODUCTION_RATE: f64 = 0.70;
+
 struct TournamentResult {
     winners: [usize; 2],
     losers: [usize; 2]
@@ -60,14 +69,15 @@ impl Population {
     /// * `population_size`: The number of individuals in the population.
     #[must_use]
     pub fn new(population_size: usize) -> Self {
-        let mut indvs: Vec<Program> = Vec::with_capacity(population_size);
-        for _ in 0..population_size {
+        let pop_size = if population_size % 2 == 0 { population_size } else { population_size + 1 };
+        let mut indvs: Vec<Program> = Vec::with_capacity(pop_size);
+        for _ in 0..pop_size {
             indvs.push(Program::new(PROGRAM_SIZE));
         }
 
         Self {
             individuals: indvs,
-            fitnesses: vec![0.0; population_size]
+            fitnesses: vec![0.0; pop_size]
         }
     }
 
@@ -75,25 +85,155 @@ impl Population {
     ///
     /// # Arguments
     /// * `training_data`: Set of data points against which the population's fitness is measured.
-    pub fn evolve(&mut self, training_data: &[(f64, f64)]) -> Program {
+    /// * `validation_data`: Data points used to measure program's capacity to generalize.
+    pub fn evolve(
+        &mut self, 
+        training_data: &[(f64, f64)],
+        validation_data: &[(f64, f64)]
+    ) -> Program {
+
        /*
         * The main loop will consist of the following steps:
         * 1. Evaluate fitness of each individual.
-        * 2. Perform selection.
-        * 3. Probabilistically perform mutation and crossover.
-        * 4. Fill population with new individuals from last step.
-        * 5. Repeat until individual fitness high enough.
+        * -- Loop starts --
+        * 2. Perform selection to return two winners and two losers.
+        * 3. Copy winners.
+        * 4. Mutate or crossover winners and add to population.
+        * 5. Probabilistically replace losers with original winners.
+        * -- Loop ends after max generations --
+        * TODO: Add more info on validation
         */
 
         self.eval_fitness(training_data);
+
+        let max_generations = self.individuals.len() / 2;
+
+        for _ in 0..max_generations {
+            // Returns two winners and two losers
+            let results = self.tournament_selection();
+            let winner_index1 = results.winners[0];
+            let winner_index2 = results.winners[1];
+
+            self.update_population(&results);
+
+            self.fitnesses[winner_index1] = mse(
+                &mut self.individuals[winner_index1],
+                training_data
+            );
+            self.fitnesses[winner_index2] = mse(
+                &mut self.individuals[winner_index2],
+                training_data
+            );
+
+            // TODO: Evaluate training fitness of new offspring
+            // TODO: Validation new offspring and global best
+        }
+
+
         todo!()
     }
 
-    /// Computes the fitness value for each program and stores it.
-    ///
-    /// # Arguments
-    /// * `training_data`: Data points against which fitness is measured
-    pub fn eval_fitness(&mut self, training_data: &[(f64, f64)]) {
+    fn update_population(&mut self, results: &TournamentResult) {
+        // Create copies of winners
+        let first_winner = self.individuals[results.winners[0]].clone();
+        let second_winner = self.individuals[results.winners[1]].clone();
+
+        let mut rng = rand::rng();
+        if rng.random::<f64>() < CROSSOVER_RATE {
+            // Get indices first
+            let idx1 = results.winners[0];
+            let idx2 = results.winners[1];
+            
+            // Create temporary copies
+            let mut prog1 = self.individuals[idx1].clone();
+            let mut prog2 = self.individuals[idx2].clone();
+            
+            // Perform crossover on the copies
+            self.crossover(&mut prog1, &mut prog2);
+            
+            // Update the population with the modified copies
+            self.individuals[idx1] = prog1;
+            self.individuals[idx2] = prog2;
+        } else {
+            // Similarly for mutation
+            let idx1 = results.winners[0];
+            let idx2 = results.winners[1];
+            
+            let mut prog1 = self.individuals[idx1].clone();
+            let mut prog2 = self.individuals[idx2].clone();
+            
+            self.mutate(&mut prog1);
+            self.mutate(&mut prog2);
+            
+            self.individuals[idx1] = prog1;
+            self.individuals[idx2] = prog2;
+        }
+
+        if rng.random::<f64>() < REPRODUCTION_RATE {
+            self.individuals[results.losers[0]] = first_winner;
+            self.individuals[results.losers[1]] = second_winner;
+        }
+    }
+
+    fn mutate(&mut self, prog: &mut Program) {
+        todo!();
+    } 
+
+    fn crossover(&mut self, prog1: &mut Program, prog2: &mut Program) {
+        /*
+         * Plan:
+         *
+         * Randomly select two indices in both program's instruction vectors.
+         * Create a slice which consists of the first segment of instructions
+         * up to the first selected point, then a slice consisting of 
+         * the segment of the other program's instructions between its selected
+         * points
+         */
+
+        let mut rng = rand::rng();
+
+        let len1 = prog1.instructions.len();
+        let len2 = prog2.instructions.len();
+
+        if len1 < 2 || len2 < 2 {
+            return;
+        }
+
+        let mut point1_1 = rng.random_range(0..len1);
+        let mut point1_2 = rng.random_range(0..len1);
+        if point1_1 > point1_2 {
+            std::mem::swap(&mut point1_1, &mut point1_2);
+        }
+
+        let mut point2_1 = rng.random_range(0..len2);
+        let mut point2_2 = rng.random_range(0..len2);
+        if point2_1 > point2_2 {
+            std::mem::swap(&mut point2_1, &mut point2_2);
+        }
+
+        let new_len1 = point1_1 + (point2_2 - point2_1 + 1) + (len1 - point1_2 - 1);
+        let new_len2 = point2_1 + (point1_2 - point1_1 + 1) + (len2 - point2_2 - 1);
+
+        let mut new_instructions1 = Vec::with_capacity(new_len1);
+        let mut new_instructions2 = Vec::with_capacity(new_len2);
+
+        // Build first program's new instructions
+        new_instructions1.extend_from_slice(&prog1.instructions[..point1_1]);
+        new_instructions1.extend_from_slice(&prog2.instructions[point2_1..=point2_2]);
+        new_instructions1.extend_from_slice(&prog1.instructions[point1_2+1..]);
+
+        // Build second program's new instructions
+        new_instructions2.extend_from_slice(&prog2.instructions[..point2_1]);
+        new_instructions2.extend_from_slice(&prog1.instructions[point1_1..=point1_2]);
+        new_instructions2.extend_from_slice(&prog2.instructions[point2_2+1..]);
+
+        // Replace original instructions with new ones
+        prog1.instructions = new_instructions1;
+        prog2.instructions = new_instructions2;
+    }
+
+    // Computes the fitness value for each program and stores it.
+    fn eval_fitness(&mut self, training_data: &[(f64, f64)]) {
         
         for i in 0..training_data.len() {
             self.fitnesses[i] = mse(&mut self.individuals[i], training_data);
