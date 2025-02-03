@@ -44,9 +44,6 @@ const TOURNAMENT_SIZE: usize = 5;
 /// Sets the rate at which new offspring are created via crossover.
 const CROSSOVER_RATE: f64 = 0.78;
 
-/// Sets the rate at which new offspring are created via mutation.
-const MUTATION_RATE: f64 = 1.0 - CROSSOVER_RATE;
-
 /// Sets the rate at which winners are reproduced.
 const REPRODUCTION_RATE: f64 = 0.70;
 
@@ -59,7 +56,8 @@ struct TournamentResult {
 pub struct Population {
     /// Vector containing the population of Programs.
     pub individuals: Vec<Program>,
-    fitnesses: Vec<f64>
+    fitnesses: Vec<f64>,
+    training_best: usize
 }
 
 impl Population {
@@ -77,7 +75,8 @@ impl Population {
 
         Self {
             individuals: indvs,
-            fitnesses: vec![0.0; pop_size]
+            fitnesses: vec![0.0; pop_size],
+            training_best: 0
         }
     }
 
@@ -114,6 +113,8 @@ impl Population {
             let winner_index1 = results.winners[0];
             let winner_index2 = results.winners[1];
 
+            println!("{} - {}", winner_index1, winner_index2);
+
             self.update_population(&results);
 
             self.fitnesses[winner_index1] = mse(
@@ -125,12 +126,25 @@ impl Population {
                 training_data
             );
 
-            // TODO: Evaluate training fitness of new offspring
+            self.set_global_best();
+
+            println!("Current best: {:?}", self.fitnesses[self.training_best]);
+
             // TODO: Validation new offspring and global best
         }
 
 
-        todo!()
+        self.individuals[self.training_best].clone()
+    }
+
+    fn set_global_best(&mut self) {
+        let mut current_best: f64 = self.fitnesses[self.training_best];
+        for i in 0..self.fitnesses.len() {
+            if self.fitnesses[i] < current_best {
+                current_best = self.fitnesses[i];
+                self.training_best = i;
+            }
+        }
     }
 
     fn update_population(&mut self, results: &TournamentResult) {
@@ -169,6 +183,7 @@ impl Population {
             self.individuals[idx2] = prog2;
         }
 
+        // Probabilistically reproduce the winners, overwriting the losers
         if rng.random::<f64>() < REPRODUCTION_RATE {
             self.individuals[results.losers[0]] = first_winner;
             self.individuals[results.losers[1]] = second_winner;
@@ -176,20 +191,10 @@ impl Population {
     }
 
     fn mutate(&mut self, prog: &mut Program) {
-        todo!();
+        return;
     } 
 
     fn crossover(&mut self, prog1: &mut Program, prog2: &mut Program) {
-        /*
-         * Plan:
-         *
-         * Randomly select two indices in both program's instruction vectors.
-         * Create a slice which consists of the first segment of instructions
-         * up to the first selected point, then a slice consisting of 
-         * the segment of the other program's instructions between its selected
-         * points
-         */
-
         let mut rng = rand::rng();
 
         let len1 = prog1.instructions.len();
@@ -249,7 +254,7 @@ impl Population {
 
         // Split the group into halves
         let first_group = &random_indices[..TOURNAMENT_SIZE];
-        let second_group = &random_indices[..TOURNAMENT_SIZE];
+        let second_group = &random_indices[(TOURNAMENT_SIZE+1)..(2*TOURNAMENT_SIZE)];
 
         // Run the two tounrnaments
         let first_results: (usize, usize) = self.compete(first_group);
@@ -264,21 +269,26 @@ impl Population {
 
     // Return highest (lowest) fitness among given group
     fn compete(&self, indices: &[usize]) -> (usize, usize) {
-        let mut current_best = f64::MAX;
-        let mut current_worst = f64::MIN;
-        let mut winner: usize = 0;
-        let mut loser: usize = 0;
-        for i in indices {
-            if self.fitnesses[*i] < current_best {
-                current_best = self.fitnesses[*i];
-                winner = *i;
-            }
+        assert!(!indices.is_empty(), "Cannot compete with empty group");
+        
+        // Initialize with first individual
+        let mut current_best = self.fitnesses[indices[0]];
+        let mut current_worst = self.fitnesses[indices[0]];
+        let mut winner = indices[0];
+        let mut loser = indices[0];
 
-            if self.fitnesses[*i] > current_worst {
-                current_worst = self.fitnesses[*i];
-                loser = *i;
+        // Compare rest of individuals
+        for &i in indices.iter().skip(1) {
+            if self.fitnesses[i] < current_best {
+                current_best = self.fitnesses[i];
+                winner = i;
+            }
+            if self.fitnesses[i] > current_worst {
+                current_worst = self.fitnesses[i];
+                loser = i;
             }
         }
+        
         (winner, loser)
     }
 
