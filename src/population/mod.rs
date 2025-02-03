@@ -36,16 +36,16 @@ use fitness::mse;
 use rand::Rng;
 
 /// This is the initial size used for each Program in the set of individuals.
-const PROGRAM_SIZE: usize = 20; 
+const PROGRAM_SIZE: usize = 15; 
 
 /// Sets the size of the tournament groups. The bigger it is relative to population size, the greater the selection pressure but more pressure means less diversity.
-const TOURNAMENT_SIZE: usize = 5;
+const TOURNAMENT_SIZE: usize = 20;
 
 /// Sets the rate at which new offspring are created via crossover.
-const CROSSOVER_RATE: f64 = 0.78;
+const CROSSOVER_RATE: f64 = 0.91;
 
 /// Sets the rate at which winners are reproduced.
-const REPRODUCTION_RATE: f64 = 0.70;
+const REPRODUCTION_RATE: f64 = 0.78;
 
 struct TournamentResult {
     winners: [usize; 2],
@@ -75,7 +75,7 @@ impl Population {
 
         Self {
             individuals: indvs,
-            fitnesses: vec![0.0; pop_size],
+            fitnesses: vec![f64::MAX; pop_size],
             training_best: 0
         }
     }
@@ -112,8 +112,8 @@ impl Population {
             let results = self.tournament_selection();
             let winner_index1 = results.winners[0];
             let winner_index2 = results.winners[1];
-
-            println!("{} - {}", winner_index1, winner_index2);
+            let loser_index1 = results.losers[0];
+            let loser_index2 = results.losers[1];
 
             self.update_population(&results);
 
@@ -125,15 +125,21 @@ impl Population {
                 &mut self.individuals[winner_index2],
                 training_data
             );
+            self.fitnesses[loser_index1] = mse(
+                &mut self.individuals[loser_index1],
+                training_data
+            );
+            self.fitnesses[loser_index2] = mse(
+                &mut self.individuals[loser_index2],
+                training_data
+            );
 
             self.set_global_best();
-
-            println!("Current best: {:?}", self.fitnesses[self.training_best]);
 
             // TODO: Validation new offspring and global best
         }
 
-
+        println!("Fitness: {:?}; Length: {:?}", self.fitnesses[self.training_best], self.individuals[self.training_best].instructions.len());
         self.individuals[self.training_best].clone()
     }
 
@@ -240,7 +246,7 @@ impl Population {
     // Computes the fitness value for each program and stores it.
     fn eval_fitness(&mut self, training_data: &[(f64, f64)]) {
         
-        for i in 0..training_data.len() {
+        for i in 0..self.individuals.len() {
             self.fitnesses[i] = mse(&mut self.individuals[i], training_data);
         }
     }
@@ -254,7 +260,7 @@ impl Population {
 
         // Split the group into halves
         let first_group = &random_indices[..TOURNAMENT_SIZE];
-        let second_group = &random_indices[(TOURNAMENT_SIZE+1)..(2*TOURNAMENT_SIZE)];
+        let second_group = &random_indices[TOURNAMENT_SIZE..(2*TOURNAMENT_SIZE)];
 
         // Run the two tounrnaments
         let first_results: (usize, usize) = self.compete(first_group);
