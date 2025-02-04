@@ -53,44 +53,6 @@ pub const CONST_LOWER_BOUND: f64 = -50.0;
 /// registers.
 pub const CONST_UPPER_BOUND: f64 = 50.0;
 
-// TODO: Validate that the total number of registers (const and var) are less than 256
-// since RegisterIndex is defined as a u8 with a max value of 256
-
-/// Struct used to define the parameters of the program.
-pub struct ProgramConfig {
-    total_var_registers: usize,
-    total_const_registers: usize,
-    const_lower_bound: f64,
-    const_upper_bound: f64
-}
-
-impl ProgramConfig {
-    /// Create new program configuration structure
-    ///
-    /// # Arguments
-    /// - `total_var_registers`: The number of calculation registers
-    /// - `total_const_registers`: The number of constant registers
-    /// - `const_lower_bound`: The lower bound on the range of constants
-    /// ` `const_upper_bound`: The upper bound on the range of constants
-    pub fn new(
-        total_var_registers: usize,
-        total_const_registers: usize,
-        const_lower_bound: f64,
-        const_upper_bound: f64
-    ) -> Self {
-        // Validate the number of registers requested
-        assert!(total_var_registers + total_const_registers < 256);
-        assert!(const_lower_bound < const_upper_bound);
-
-        Self {
-            total_var_registers,
-            total_const_registers,
-            const_lower_bound,
-            const_upper_bound
-        }
-    }
-}
-
 /// The struct which defines the Program. It contains 3 members:
 /// - `instructions`: This is the sequence of arithmetic instructions which will execute when the program is run:
 /// - `var_registers`: These are initialized with a constant value at the begining of each test case and are subsequently used for calculation through the running of a program.
@@ -99,6 +61,7 @@ impl ProgramConfig {
 pub struct Program {
     /// Vector holding the sequence of Instructions which defines the Program.
     pub instructions: Vec<Instruction>,
+    effective_code: Vec<Instruction>,
     var_registers: [f64; TOTAL_VAR_REGISTERS],
     const_registers: [f64; TOTAL_CONST_REGISTERS],
 }
@@ -112,6 +75,7 @@ impl Program {
     pub fn new(initial_size: usize) -> Self {
         let mut program = Self {
             instructions: Vec::new(),
+            effective_code: Vec::new(),
             var_registers: [1.0; TOTAL_VAR_REGISTERS],
             const_registers: [0.0; TOTAL_CONST_REGISTERS]
         };
@@ -120,6 +84,8 @@ impl Program {
             .take(initial_size)
             .collect();
 
+        program.effective_code = Program::remove_introns(&program.instructions);
+
         // Equal step range from lower to upper
         let lower: f64 = CONST_LOWER_BOUND;
         let upper: f64 = CONST_UPPER_BOUND;
@@ -127,6 +93,18 @@ impl Program {
         program.const_registers = std::array::from_fn(|i| lower + (i as f64) * step);
 
         program
+    }
+
+    /// Returns reduced code containing only effective code
+    ///
+    /// # Arguments
+    /// - `code`: Full program to be reduced
+    #[must_use] pub fn remove_introns(code: &Vec<Instruction>) -> Vec<Instruction> {
+        let effective_regs: Vec<RegisterIndex> = vec![
+            RegisterIndex::try_from(OUTPUT_REGISTER).expect("Failed to cast")
+        ];
+
+        todo!()
     }
 
     /// Executes the sequences of instructions on given input and returns the final output of the
