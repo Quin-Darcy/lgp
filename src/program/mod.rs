@@ -104,7 +104,7 @@ impl Program {
             RegisterIndex::try_from(OUTPUT_REGISTER).expect("Failed to cast")
         ];
 
-        todo!()
+        vec![]
     }
 
     /// Executes the sequences of instructions on given input and returns the final output of the
