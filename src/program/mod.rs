@@ -27,7 +27,7 @@ pub mod instruction;
 
 use instruction::Instruction;
 
-// Register configuration
+// Type alias for register
 type RegisterIndex = u8;
 
 /// Constant which defines the total number of variable or 'calculation'
@@ -56,10 +56,46 @@ pub const CONST_UPPER_BOUND: f64 = 50.0;
 // TODO: Validate that the total number of registers (const and var) are less than 256
 // since RegisterIndex is defined as a u8 with a max value of 256
 
+/// Struct used to define the parameters of the program.
+pub struct ProgramConfig {
+    total_var_registers: usize,
+    total_const_registers: usize,
+    const_lower_bound: f64,
+    const_upper_bound: f64
+}
+
+impl ProgramConfig {
+    /// Create new program configuration structure
+    ///
+    /// # Arguments
+    /// - `total_var_registers`: The number of calculation registers
+    /// - `total_const_registers`: The number of constant registers
+    /// - `const_lower_bound`: The lower bound on the range of constants
+    /// ` `const_upper_bound`: The upper bound on the range of constants
+    pub fn new(
+        total_var_registers: usize,
+        total_const_registers: usize,
+        const_lower_bound: f64,
+        const_upper_bound: f64
+    ) -> Self {
+        // Validate the number of registers requested
+        assert!(total_var_registers + total_const_registers < 256);
+        assert!(const_lower_bound < const_upper_bound);
+
+        Self {
+            total_var_registers,
+            total_const_registers,
+            const_lower_bound,
+            const_upper_bound
+        }
+    }
+}
+
 /// The struct which defines the Program. It contains 3 members:
 /// - `instructions`: This is the sequence of arithmetic instructions which will execute when the program is run:
 /// - `var_registers`: These are initialized with a constant value at the begining of each test case and are subsequently used for calculation through the running of a program.
 /// - `const_registers`: These hold a range of read-only constants to be pulled into the calculations during the running of the program.
+#[derive(Clone)]
 pub struct Program {
     /// Vector holding the sequence of Instructions which defines the Program.
     pub instructions: Vec<Instruction>,
@@ -90,13 +126,6 @@ impl Program {
         let step: f64 = (upper - lower) / (TOTAL_CONST_REGISTERS as f64);
         program.const_registers = std::array::from_fn(|i| lower + (i as f64) * step);
 
-        /*
-        // Random values picked from range
-        program.const_registers.iter_mut()
-            .zip(CONST_LOWER_BOUND as i32..=CONST_UPPER_BOUND as i32)
-            .for_each(|(reg, val)| *reg = val as f64);
-
-        */
         program
     }
 

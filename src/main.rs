@@ -1,7 +1,8 @@
-use lgp::population::Population;
-use lgp::program::Program;
+//use lgp::population::Population;
+//use lgp::program::Program;
 
 fn main() {
+    /*
     let training_data: Vec<(f64, f64)> = vec![
         (-5.0, 25.0),
         (-4.0, 16.0),
@@ -25,4 +26,5 @@ fn main() {
     ];
     let mut pop = Population::new(10000);
     let mut _program: Program = pop.evolve(&training_data, &validation_data);
+    */
 }

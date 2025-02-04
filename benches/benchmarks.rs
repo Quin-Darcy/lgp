@@ -2,37 +2,56 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use lgp::program::Program;
-use lgp::population::Population;
 
-fn benchmark_population_creation(c: &mut Criterion) {
-    c.bench_function("create_population", |b| {
+fn benchmark_small_program_creation(c: &mut Criterion) {
+    c.bench_function("create_small_program", |b| {
         b.iter(|| {
-            Population::new(100)
+            Program::new(10)
         })
     });
 }
 
-fn benchmark_population_eval_fitness(c: &mut Criterion) {
-    let mut pop = Population::new(100);
-    let training_data: Vec<(f64, f64)> = vec![(2.3, 3.4), (18.9, 23.6), (-10.2, -0.01), (4.7, -0.03)];
-    c.bench_function("eval_fitness", |b| {
+
+fn benchmark_medium_program_creation(c: &mut Criterion) {
+    c.bench_function("create_medium_program", |b| {
         b.iter(|| {
-            pop.eval_fitness(&training_data)
+            Program::new(1000)
         })
     });
 }
 
-fn benchmark_program_creation(c: &mut Criterion) {
-    c.bench_function("create_program", |b| {
+
+fn benchmark_large_program_creation(c: &mut Criterion) {
+    c.bench_function("create_large_program", |b| {
         b.iter(|| {
-            Program::new(100)
+            Program::new(10000)
         })
     });
 }
 
-fn benchmark_program_run(c: &mut Criterion) {
-    let mut p = Program::new(100);
-    c.bench_function("run_program", |b| {
+fn benchmark_small_program_run(c: &mut Criterion) {
+    let mut p = Program::new(10);
+    c.bench_function("run_small_program", |b| {
+        b.iter(|| {
+            p.run(2.0)
+        })
+    });
+}
+
+
+fn benchmark_medium_program_run(c: &mut Criterion) {
+    let mut p = Program::new(1000);
+    c.bench_function("run_medium_program", |b| {
+        b.iter(|| {
+            p.run(2.0)
+        })
+    });
+}
+
+
+fn benchmark_large_program_run(c: &mut Criterion) {
+    let mut p = Program::new(10000);
+    c.bench_function("run_large_program", |b| {
         b.iter(|| {
             p.run(2.0)
         })
@@ -40,9 +59,11 @@ fn benchmark_program_run(c: &mut Criterion) {
 }
 
 criterion_group!(benches,
-    //benchmark_population_creation,
-    benchmark_population_eval_fitness
-    //benchmark_program_creation,
-    //benchmark_program_run
+    benchmark_small_program_creation,
+    benchmark_medium_program_creation,
+    benchmark_large_program_creation,
+    benchmark_small_program_run,
+    benchmark_medium_program_run,
+    benchmark_large_program_run
 );
 criterion_main!(benches);
