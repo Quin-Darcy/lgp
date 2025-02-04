@@ -61,7 +61,6 @@ pub const CONST_UPPER_BOUND: f64 = 50.0;
 pub struct Program {
     /// Vector holding the sequence of Instructions which defines the Program.
     pub instructions: Vec<Instruction>,
-    effective_code: Vec<Instruction>,
     var_registers: [f64; TOTAL_VAR_REGISTERS],
     const_registers: [f64; TOTAL_CONST_REGISTERS],
 }
@@ -75,7 +74,6 @@ impl Program {
     pub fn new(initial_size: usize) -> Self {
         let mut program = Self {
             instructions: Vec::new(),
-            effective_code: Vec::new(),
             var_registers: [1.0; TOTAL_VAR_REGISTERS],
             const_registers: [0.0; TOTAL_CONST_REGISTERS]
         };
@@ -84,7 +82,7 @@ impl Program {
             .take(initial_size)
             .collect();
 
-        program.effective_code = Program::remove_introns(&program.instructions);
+        Program::remove_introns(&mut program.instructions);
 
         // Equal step range from lower to upper
         let lower: f64 = CONST_LOWER_BOUND;
@@ -95,16 +93,21 @@ impl Program {
         program
     }
 
-    /// Returns reduced code containing only effective code
+    /// Mark the effective instructions in given code
     ///
     /// # Arguments
     /// - `code`: Full program to be reduced
-    #[must_use] pub fn remove_introns(code: &Vec<Instruction>) -> Vec<Instruction> {
-        let effective_regs: Vec<RegisterIndex> = vec![
+    pub fn remove_introns(code: &mut Vec<Instruction>) {
+        let mut effective_regs: Vec<RegisterIndex> = vec![
             RegisterIndex::try_from(OUTPUT_REGISTER).expect("Failed to cast")
         ];
 
-        vec![]
+        for inst in code.iter_mut().rev() {
+            if effective_regs.contains(&inst.dst()) {
+                effective_regs.extend(inst.operands());
+                inst.0 |= 0x8000_0000;
+            }
+        }
     }
 
     /// Executes the sequences of instructions on given input and returns the final output of the
@@ -116,6 +119,11 @@ impl Program {
     pub fn run(&mut self, input: f64) -> f64 {
         self.var_registers[INPUT_REGISTER] = input;
         for inst in &self.instructions {
+            // Check the effective instruction flag
+            if inst.0 & 0x8000_0000 == 0 {
+                continue;
+            }
+
             let mut operands = [0.0; 2];
             for (i, &idx) in inst.operands().iter().enumerate() {
                 operands[i] = if idx < u8::try_from(TOTAL_VAR_REGISTERS).expect("Failed to cast to u8") {
