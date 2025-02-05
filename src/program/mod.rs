@@ -72,17 +72,17 @@ impl Program {
     /// * `initial_size`: The number of instructions the new program will be initialized with.
     #[allow(clippy::cast_precision_loss)]
     pub fn new(initial_size: usize) -> Self {
+        let mut instructions: Vec<Instruction> = std::iter::repeat_with(Instruction::random)
+            .take(initial_size)
+            .collect();
+        
+       Program::mark_introns(&mut instructions);
+
         let mut program = Self {
-            instructions: Vec::new(),
+            instructions,
             var_registers: [1.0; TOTAL_VAR_REGISTERS],
             const_registers: [0.0; TOTAL_CONST_REGISTERS]
         };
-
-        program.instructions = std::iter::repeat_with(Instruction::random)
-            .take(initial_size)
-            .collect();
-
-        Program::remove_introns(&mut program.instructions);
 
         // Equal step range from lower to upper
         let lower: f64 = CONST_LOWER_BOUND;
@@ -97,7 +97,7 @@ impl Program {
     ///
     /// # Arguments
     /// - `code`: Full program to be reduced
-    pub fn remove_introns(code: &mut Vec<Instruction>) {
+    pub fn mark_introns(code: &mut Vec<Instruction>) {
         let mut effective_regs: Vec<RegisterIndex> = vec![
             RegisterIndex::try_from(OUTPUT_REGISTER).expect("Failed to cast")
         ];
@@ -170,9 +170,31 @@ mod tests {
         let inst5 = Instruction(0x0100043D);
         let inst6 = Instruction(0x01000005);
 
-        let inst_vec: Vec<Instruction> = vec![inst1, inst2, inst3, inst4, inst5, inst6];
-
         let mut prog = Program::new(6);
+        let mut inst_vec: Vec<Instruction> = vec![inst1, inst2, inst3, inst4, inst5, inst6];
+
+        Program::mark_introns(&mut inst_vec);
+        prog.instructions = inst_vec;
+
+        assert_eq!(prog.run(input), -1.5);
+    }
+
+    #[test]
+    fn test_intron_removal() {
+        let input: f64 = 3.0;
+        let inst1 = Instruction(0x00023901);
+        let inst2 = Instruction(0x00060705);
+        let inst3 = Instruction(0x02033C02);
+        let inst4 = Instruction(0x03040302);
+        let inst5 = Instruction(0x03053B3C);
+        let inst6 = Instruction(0x0100043D);
+        let inst7 = Instruction(0x03070605);
+        let inst8 = Instruction(0x01000005);
+
+        let mut prog = Program::new(8);
+        let mut inst_vec: Vec<Instruction> = vec![inst1, inst2, inst3, inst4, inst5, inst6, inst7, inst8];
+
+        Program::mark_introns(&mut inst_vec);
         prog.instructions = inst_vec;
 
         assert_eq!(prog.run(input), -1.5);
