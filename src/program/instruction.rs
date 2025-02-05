@@ -88,7 +88,7 @@ impl Instruction {
 
     /// Parses instruction and returns the operator.
     #[must_use] pub fn operator(&self) -> Operator {
-        let op_num: u8 = (self.0 >> 24) as u8;
+        let op_num: u8 = ((self.0 >> 24) & 0x7F) as u8;
         unsafe { std::mem::transmute::<u8, Operator>(op_num) }
     }
 
