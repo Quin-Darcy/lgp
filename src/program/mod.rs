@@ -97,7 +97,8 @@ impl Program {
     ///
     /// # Arguments
     /// - `code`: Full program to be reduced
-    pub fn mark_introns(code: &mut Vec<Instruction>) {
+    #[allow(clippy::missing_panics_doc)]
+    pub fn mark_introns(code: &mut [Instruction]) {
         let mut effective_regs: Vec<RegisterIndex> = vec![
             RegisterIndex::try_from(OUTPUT_REGISTER).expect("Failed to cast")
         ];
@@ -200,3 +201,4 @@ mod tests {
         assert_eq!(prog.run(input), -1.5);
     }
 }
+
