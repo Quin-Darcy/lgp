@@ -2,13 +2,6 @@
 //! the linear genetic program evolution. The main data structure 
 //! `Population`, represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
-//!
-//! The members of a `Population` instance are:
-//! - `programs`: Vector containing the `Program`s undergoing evolution.
-//! - `fitness_values`: The fitness value for each of the programs.
-//! - `training_best`: Index to the program that has performed best on the given training data.
-//! - `validation_best`: Index to the program that has performed best on unknown data.
-
 use crate::program::Program;
 
 
