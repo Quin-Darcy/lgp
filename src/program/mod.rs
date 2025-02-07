@@ -72,8 +72,8 @@ impl Program {
     /// * `initial_size`: The number of instructions the new program will be initialized with.
     #[allow(clippy::cast_precision_loss)]
     pub fn new(initial_size: usize) -> Self {
-        let mut instructions: Vec<Instruction> = std::iter::repeat_with(Instruction::random)
-            .take(initial_size)
+        let mut instructions: Vec<Instruction> = (0..initial_size)
+            .map(|_| Instruction::random())
             .collect();
         
        Program::mark_introns(&mut instructions);
