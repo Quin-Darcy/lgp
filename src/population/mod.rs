@@ -12,15 +12,15 @@ use std::fmt;
 /// The members of a `Population` instance are:
 /// - `programs`: Vector containing the `Program`s undergoing evolution.
 /// - `fitness_values`: The fitness value for each of the programs.
-/// - `training_best`: Index to the program that has performed best on the given training data.
-/// - `validation_best`: Index to the program that has performed best on unknown data.
+/// - `training_best_index`: Index to the program that has performed best on the given training data.
+/// - `validation_best_index`: Index to the program that has performed best on unknown data.
 /// - `training_data`: Contains the inputs and expected outputs. This is the data against on which the population will be trained.
 /// - `validation_data`: This data is used to assess how well a program generalizes outside of the training data.
 pub struct Population {
     programs: Vec<Program>,
     fitness_values: Vec<f64>,
-    training_best: usize,
-    validation_best: usize,
+    training_best_index: usize,
+    validation_best_index: usize,
     training_data: Vec<(f64, f64)>,
     validation_data: Vec<(f64, f64)>
 }
@@ -48,8 +48,8 @@ impl Population {
         Self {
             programs,
             fitness_values: vec![f64::MAX; population_size],
-            training_best: 0,
-            validation_best: 0,
+            training_best_index: 0,
+            validation_best_index: 0,
             training_data,
             validation_data
         }
@@ -62,8 +62,16 @@ impl fmt::Display for Population {
             .iter()
             .map(|x| x.instructions.len())
             .collect();
-        let avg_prog_len: f64 = prog_lens.iter().sum::<usize>() as f64 / (self.programs.len() as f64);
+        let avg_prog_len: f64 = prog_lens
+            .iter()
+            .sum::<usize>() as f64 / (self.programs.len() as f64);
 
-        write!(f, "Average Program Length: {:.2}", avg_prog_len, prog_lens)
+        write!(f, "--------------------------------------\n")?;
+        write!(f, "Average Program Length: {avg_prog_len}\n")?;
+        write!(f, "Best Training Fitness: {}\n", self.fitness_values[self.training_best])?;
+        write!(f, "Best Training Length: {}\n", self.programs[self.training_best].instructions.len())?;
+        write!(f, "Best Validation Fitness: {}\n", self.fitness_values[self.validation_best])?;
+        write!(f, "Best Validation Length: {}", self.programs[self.validation_best].instructions.len())?;
+        write!(f, "\n--------------------------------------")
     }
 }
