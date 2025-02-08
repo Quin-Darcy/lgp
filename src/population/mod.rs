@@ -3,6 +3,8 @@
 //! represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
 use crate::program::Program;
+use rand::Rng;
+use std::fmt;
 
 
 /// Main structure for the management and evolution of the programs.
@@ -12,10 +14,8 @@ use crate::program::Program;
 /// - `fitness_values`: The fitness value for each of the programs.
 /// - `training_best`: Index to the program that has performed best on the given training data.
 /// - `validation_best`: Index to the program that has performed best on unknown data.
-/// - `training_data`: Contains the inputs and expected outputs. This is the data against on which
-/// the population will be trained.
-/// - `validation_data`: This data is used to assess how well a program generalizes outside of the
-/// training data.
+/// - `training_data`: Contains the inputs and expected outputs. This is the data against on which the population will be trained.
+/// - `validation_data`: This data is used to assess how well a program generalizes outside of the training data.
 pub struct Population {
     programs: Vec<Program>,
     fitness_values: Vec<f64>,
@@ -25,7 +25,7 @@ pub struct Population {
     validation_data: Vec<(f64, f64)>
 }
 
-const INITIAL_PROGRAM_SIZE: usize = 15;
+const MAX_INIT_PROG_SIZE: usize = 15;
 
 impl Population {
     /// Create a new Population
@@ -34,14 +34,15 @@ impl Population {
     /// - `population_size`: Number of programs in population
     /// - `training_data`: Data on which to train population
     /// - `validation_data`: Data to test generalizability
-    pub fn new(
+    #[must_use] pub fn new(
         population_size: usize, 
         training_data: Vec<(f64, f64)>,
         validation_data: Vec<(f64, f64)>
     ) -> Self {
         // Initialize population as set of random Programs
+        let mut rng = rand::rng();
         let programs: Vec<Program> = (0..population_size)
-            .map(|_| Program::new(INITIAL_PROGRAM_SIZE))
+            .map(|_| Program::new(rng.random_range(2_usize..MAX_INIT_PROG_SIZE)))
             .collect();
 
         Self {
@@ -52,5 +53,17 @@ impl Population {
             training_data,
             validation_data
         }
+    }
+}
+
+impl fmt::Display for Population {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let prog_lens: Vec<usize> = self.programs
+            .iter()
+            .map(|x| x.instructions.len())
+            .collect();
+        let avg_prog_len: f64 = prog_lens.iter().sum::<usize>() as f64 / (self.programs.len() as f64);
+
+        write!(f, "Average Program Length: {:.2}", avg_prog_len, prog_lens)
     }
 }
