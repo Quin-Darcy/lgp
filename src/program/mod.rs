@@ -71,7 +71,7 @@ impl Program {
     /// # Arguments
     /// * `initial_size`: The number of instructions the new program will be initialized with.
     #[allow(clippy::cast_precision_loss)]
-    pub fn new(initial_size: usize) -> Self {
+    #[must_use] pub fn new(initial_size: usize) -> Self {
         let mut instructions: Vec<Instruction> = (0..initial_size)
             .map(|_| Instruction::random())
             .collect();
