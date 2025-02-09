@@ -65,11 +65,13 @@ impl Population {
 }
 
 impl fmt::Display for Population {
+    #[allow(clippy::cast_precision_loss)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let prog_lens: Vec<usize> = self.programs
             .iter()
             .map(|x| x.instructions.len())
             .collect();
+
         let avg_prog_len: f64 = prog_lens
             .iter()
             .sum::<usize>() as f64 / (self.programs.len() as f64);
@@ -78,12 +80,12 @@ impl fmt::Display for Population {
             .iter()
             .sum::<f64>() / (self.fitness_values.len() as f64);
 
-        write!(f, "--------------------------------------\n")?;
-        write!(f, "Average Fitness Value: {:.2}\n", avg_fitness_value)?;
-        write!(f, "Average Program Length: {:.1}\n", avg_prog_len)?;
-        write!(f, "Best Training Fitness: {}\n", self.fitness_values[self.training_best_index])?;
-        write!(f, "Best Training Length: {}\n", self.programs[self.training_best_index].instructions.len())?;
-        write!(f, "Best Validation Fitness: {}\n", self.fitness_values[self.validation_best_index])?;
+        writeln!(f, "--------------------------------------")?;
+        writeln!(f, "Average Fitness Value: {avg_fitness_value:.2}")?;
+        writeln!(f, "Average Program Length: {avg_prog_len:.1}")?;
+        writeln!(f, "Best Training Fitness: {}", self.fitness_values[self.training_best_index])?;
+        writeln!(f, "Best Training Length: {}", self.programs[self.training_best_index].instructions.len())?;
+        writeln!(f, "Best Validation Fitness: {}", self.fitness_values[self.validation_best_index])?;
         write!(f, "Best Validation Length: {}", self.programs[self.validation_best_index].instructions.len())?;
         write!(f, "\n--------------------------------------")
     }
