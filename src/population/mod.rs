@@ -6,6 +6,9 @@ use crate::program::Program;
 use rand::Rng;
 use std::fmt;
 
+mod fitness;
+use fitness::mse; 
+
 
 /// Main structure for the management and evolution of the programs.
 ///
@@ -28,7 +31,7 @@ pub struct Population {
 const MAX_INIT_PROG_SIZE: usize = 15;
 
 impl Population {
-    /// Create a new Population
+    /// Create a new Population and initialize the fitness values
     ///
     /// # Arguments
     /// - `population_size`: Number of programs in population
@@ -41,13 +44,18 @@ impl Population {
     ) -> Self {
         // Initialize population as set of random Programs
         let mut rng = rand::rng();
-        let programs: Vec<Program> = (0..population_size)
+        let mut programs: Vec<Program> = (0..population_size)
             .map(|_| Program::new(rng.random_range(2_usize..MAX_INIT_PROG_SIZE)))
+            .collect();
+
+        let fitness_values: Vec<f64> = programs
+            .iter_mut()
+            .map(|x| mse(x, &training_data))
             .collect();
 
         Self {
             programs,
-            fitness_values: vec![f64::MAX; population_size],
+            fitness_values,
             training_best_index: 0,
             validation_best_index: 0,
             training_data,
@@ -68,10 +76,10 @@ impl fmt::Display for Population {
 
         write!(f, "--------------------------------------\n")?;
         write!(f, "Average Program Length: {avg_prog_len}\n")?;
-        write!(f, "Best Training Fitness: {}\n", self.fitness_values[self.training_best])?;
-        write!(f, "Best Training Length: {}\n", self.programs[self.training_best].instructions.len())?;
-        write!(f, "Best Validation Fitness: {}\n", self.fitness_values[self.validation_best])?;
-        write!(f, "Best Validation Length: {}", self.programs[self.validation_best].instructions.len())?;
+        write!(f, "Best Training Fitness: {}\n", self.fitness_values[self.training_best_index])?;
+        write!(f, "Best Training Length: {}\n", self.programs[self.training_best_index].instructions.len())?;
+        write!(f, "Best Validation Fitness: {}\n", self.fitness_values[self.validation_best_index])?;
+        write!(f, "Best Validation Length: {}", self.programs[self.validation_best_index].instructions.len())?;
         write!(f, "\n--------------------------------------")
     }
 }
