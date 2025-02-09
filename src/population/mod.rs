@@ -78,6 +78,8 @@ impl fmt::Display for Population {
             .iter()
             .sum::<f64>() / (self.fitness_values.len() as f64);
 
+        write!(f, "Best Training Program: {:?}", self.programs[self.training_best_index].display())?;
+
         write!(f, "--------------------------------------\n")?;
         write!(f, "Average Fitness Value: {:.2}\n", avg_fitness_value)?;
         write!(f, "Average Program Length: {:.1}\n", avg_prog_len)?;
