@@ -29,14 +29,31 @@ mod tests {
             (3.0, 9.0),
             (4.0, 16.0)
         ];
-        let mut p = Program::new(3);
-        p.instructions = vec![
-            Instruction(0x0002_0401),   // vr[2] = vr[4] + vr[1]
-            Instruction(0x0103_0501),   // vr[3] = vr[5] - vr[1]
-            Instruction(0x0200_0203)    // vr[0] = vr[2] * vr[3]
+
+        // Create the program
+        let mut prog = Program::new(3);
+
+        // Create vector with instructions, then send it to have effective code marked
+        let mut instructions: Vec<Instruction> = vec![
+            Instruction(0x0002_0401),   // VR[2] = VR[4] + VR[1]
+            Instruction(0x0103_0501),   // VR[3] = VR[5] - VR[1]
+            Instruction(0x0200_0203)    // VR[0] = VR[2] * VR[3]
         ];
+        Program::mark_introns(&mut instructions);
+
+        // Set the program's instructions equal to the marked code
+        prog.instructions = instructions;
+
 
         /*
+         *  VR[0] = VR[2] * VR[3]
+         *        = (VR[4] + VR[1]) * (VR[5] - VR[1])
+         *        = (1.0 + VR[1]) * (1.0 - VR[1])
+         *        = 1.0 - VR[1] + VR[1] - (VR[1])^2
+         *        = 1.0 - (VR[1])^2
+         *
+         *  ----------------------------------------
+         *
          *  p(x) = 1.0 - x^2
          *
          *  p(0.0) = 1.0
@@ -56,6 +73,6 @@ mod tests {
          *  1301.0 / 5.0 = 260.2
          */
 
-        assert_eq!(mse(&mut p, &training_data), 260.2);
+        assert_eq!(mse(&mut prog, &training_data), 260.2);
     }
 }
