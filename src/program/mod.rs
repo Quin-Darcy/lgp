@@ -141,8 +141,6 @@ impl Program {
 
             self.var_registers[inst.dst() as usize] = inst.operator()
                 .execute(operands[0], operands[1]);
-
-            println!("{inst} = {:?}", self.var_registers[inst.dst() as usize]);
         }
         self.var_registers[OUTPUT_REGISTER]
     }
