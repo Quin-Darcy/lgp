@@ -200,7 +200,6 @@ mod tests {
 
     #[test]
     fn test_intron_marking() {
-        let input: f64 = 2.0; 
         let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
         let inst2 = Instruction(0x0204_0203); // VR[4] = VR[2] * VR[3] <-- Intron
         let inst3 = Instruction(0x0001_0301); // VR[1] = VR[3] + VR[1]
