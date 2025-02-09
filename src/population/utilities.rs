@@ -1,5 +1,11 @@
 use crate::program::Program;
 
+/// Calculate the Mean-Squared Error between set of expected values
+/// and the output of the given program for the given set of inputs
+///
+/// # Arguments
+/// - `p`: The `Program` to be evaluated
+/// - `training_data`: Set of data containing inputs and expected outputs
 #[allow(clippy::cast_precision_loss)]
 pub fn mse(p: &mut Program, training_data: &[(f64, f64)]) -> f64 {
     if training_data.is_empty() {
@@ -15,13 +21,31 @@ pub fn mse(p: &mut Program, training_data: &[(f64, f64)]) -> f64 {
         .sum::<f64>() / len
 }
 
+/// Return the index of the smallest element in an vector slice
+///
+/// # Arguments
+/// - `elements`: Set of elements we are searching
+pub fn smallest_element_index(elements: &[f64]) -> usize {
+    let mut smallest_element = f64::MAX;
+    let mut index: usize = 0;
+
+    for (i, e) in elements.iter().enumerate() {
+        if *e < smallest_element {
+            smallest_element = *e;
+            index = i;
+        }
+    }
+    return index;
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::program::instruction::Instruction;
 
     #[test]
-    fn test_fitness_mse() {
+    fn test_utility_mse() {
         let training_data: Vec<(f64, f64)> = vec![
             (0.0, 0.0),
             (1.0, 1.0),
@@ -74,5 +98,18 @@ mod tests {
          */
 
         assert_eq!(mse(&mut prog, &training_data), 260.2);
+    }
+
+    #[test]
+    fn test_utility_smallest_element_index() {
+        let elements: Vec<f64> = vec![
+            45.6,
+            28.9,
+            2.04,
+            3.11,
+            5.67
+        ];
+
+        assert_eq!(smallest_element_index(&elements), 2);
     }
 }

@@ -6,8 +6,8 @@ use crate::program::Program;
 use rand::Rng;
 use std::fmt;
 
-mod fitness;
-use fitness::mse; 
+mod utilities;
+use utilities::{mse, smallest_element_index}; 
 
 
 /// Main structure for the management and evolution of the programs.
@@ -48,15 +48,19 @@ impl Population {
             .map(|_| Program::new(rng.random_range(2_usize..MAX_INIT_PROG_SIZE)))
             .collect();
 
+        // Collect the fitness values of the random programs
         let fitness_values: Vec<f64> = programs
             .iter_mut()
             .map(|x| mse(x, &training_data))
             .collect();
 
+        // The best is defined as the program with the smallest fitness value
+        let training_best_index = smallest_element_index(&fitness_values);
+
         Self {
             programs,
             fitness_values,
-            training_best_index: 0,
+            training_best_index,
             validation_best_index: 0,
             training_data,
             validation_data
