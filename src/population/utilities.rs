@@ -35,7 +35,7 @@ pub fn smallest_element_index(elements: &[f64]) -> usize {
             index = i;
         }
     }
-    return index;
+    index
 }
 
 
