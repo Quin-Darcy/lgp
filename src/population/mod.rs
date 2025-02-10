@@ -7,7 +7,12 @@ use rand::Rng;
 use std::fmt;
 
 mod utilities;
-use utilities::{mse, smallest_element_index}; 
+use utilities::{
+    mse, 
+    smallest_element_index,
+    largest_element_index,
+    select_no_replacement
+}; 
 
 
 /// Main structure for the management and evolution of the programs.
@@ -28,7 +33,18 @@ pub struct Population {
     validation_data: Vec<(f64, f64)>
 }
 
+// For each `Program` randomly generated, it will have anywhere
+// from 2 to `MAX_INIT_PROG_SIZE` many instructions
 const MAX_INIT_PROG_SIZE: usize = 15;
+
+// This parameter sets how many `Programs` compete in a tournament.
+// The higher the number, the greater the selection pressure but 
+// this decreases diversity.
+const TOURNAMENT_SIZE: usize = 4;
+struct TournamentResult {
+    winners: [usize; 2],
+    losers: [usize; 2]
+}
 
 impl Population {
     /// Create a new Population and initialize the fitness values
@@ -44,7 +60,12 @@ impl Population {
     ) -> Self {
         // Initialize population as set of random Programs
         let mut rng = rand::rng();
-        let mut programs: Vec<Program> = (0..population_size)
+        let pop_size = if population_size % 2 == 0 { 
+            population_size 
+        } else {
+            population_size + 1
+        };
+        let mut programs: Vec<Program> = (0..pop_size)
             .map(|_| Program::new(rng.random_range(2_usize..MAX_INIT_PROG_SIZE)))
             .collect();
 
@@ -65,6 +86,40 @@ impl Population {
             training_data,
             validation_data
         }
+    }
+
+    /// Main genetic algorithm loop to evolve a program against the training data.
+    pub fn evolve(&mut self) -> Program {
+        /*
+         * The main loop consists of the following steps:
+         * 1. Peform selectoin to return two winners and two losers.
+         * 2. Copy winners.
+         * 3. Mutate or crossover winners and add to population.
+         * 4. Probabilistically replace losers with original winners.
+         * 5. Update training and validation bests.
+         */
+
+        // Two old programs will be replaced every generation with
+        // two new programs. Therefore after the number of generations
+        // elapsed is equal to have the population size, all original
+        // programs in the population will have been replaced.
+        let max_generations = self.programs.len() / 2;
+
+        for _ in 0..max_generations {
+            let selection_results = self.tournament_selection();
+        }
+
+        todo!()
+    }
+
+    fn tournament_selection(&mut self) -> TournamentResult {
+        // Get 2 * TOURNAMENT_SIZE many random individuals
+        let competitors: Vec<usize> = select_no_replacement(
+            self.programs.len(),
+            2 * TOURNAMENT_SIZE
+        );
+
+        todo!()
     }
 }
 
