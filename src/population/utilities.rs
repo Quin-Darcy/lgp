@@ -154,4 +154,7 @@ mod tests {
 
         assert_eq!(smallest_element_index(&elements), 2);
     }
+
+    // TODO: Add unit test for largest_element_index
+    // TODO: Add unit test for selection_no_replacement
 }
