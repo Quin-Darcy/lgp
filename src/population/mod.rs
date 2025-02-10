@@ -112,15 +112,48 @@ impl Population {
         todo!()
     }
 
+    // Select random programs, split group in half, and select
+    // winner from each group and loser from each group.
     fn tournament_selection(&mut self) -> TournamentResult {
-        // Get 2 * TOURNAMENT_SIZE many random individuals
-        let competitors: Vec<usize> = select_no_replacement(
+        // Select the random individuals. This contains the original 
+        // index for each chosen individual
+        let competitor_indices: Vec<usize> = select_no_replacement(
             self.programs.len(),
             2 * TOURNAMENT_SIZE
         );
 
-        todo!()
+        // Store the fitness values for each of the chosen. Note, 
+        // the 0th element in this array corresponds to the 0th
+        // element in `competitor_indices` which contains the 
+        // original index (wrt self.programs) of the first selected
+        // program.
+        let competitors: Vec<f64> = competitor_indices
+            .iter()
+            .map(|x| self.fitness_values[*x])
+            .collect();
+
+        // Split the group into two halves
+        let first_group: &[f64] = &competitors[..TOURNAMENT_SIZE];
+        let second_group: &[f64] = &competitors[TOURNAMENT_SIZE..(2*TOURNAMENT_SIZE)];
+
+        // This returns the index of the smallest float in the first group
+        let first_winner_index: usize = smallest_element_index(first_group);
+        let first_loser_index: usize = largest_element_index(first_group);
+        let second_winner_index: usize = smallest_element_index(first_group);
+        let second_loser_index: usize = largest_element_index(second_group);
+
+        let first_winner = competitor_indices[first_winner_index];
+        let first_loser = competitor_indices[first_loser_index];
+        let second_winner = competitor_indices[second_winner_index + TOURNAMENT_SIZE];
+        let second_loser = competitor_indices[second_loser_index + TOURNAMENT_SIZE];
+
+        TournamentResult {
+            winners: [first_winner, second_winner],
+            losers: [first_loser, second_loser]
+        }
     }
+
+
 }
 
 impl fmt::Display for Population {
