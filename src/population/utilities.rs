@@ -1,4 +1,5 @@
 use crate::program::Program;
+use rand::Rng;
 
 /// Calculate the Mean-Squared Error between set of expected values
 /// and the output of the given program for the given set of inputs
@@ -36,6 +37,47 @@ pub fn smallest_element_index(elements: &[f64]) -> usize {
         }
     }
     index
+}
+
+/// Return the index of the largest element in a vector slcie
+///
+/// # Arguments
+/// - `elements`: Set of elements we are searching
+pub fn largest_element_index(elements: &[f64]) -> usize {
+    let mut largest_element: f64 = 0.0;
+    let mut index: usize = 0;
+
+    for (i, e) in elements.iter().enumerate() {
+        if *e > largest_element {
+            largest_element = *e;
+            index = i;
+        }
+    }
+    index
+}
+
+/// Selects k indicies from 0..N-1, without replacement
+///
+/// # Arguments
+/// - `n`: Number setting upper bound on set from which selection is being made
+/// - `k`: Number of items to be selected
+pub fn select_no_replacement(n: usize, k: usize) -> Vec<usize> {
+    assert!(k <= n, "Cannot select more items than available");
+    assert!(k != 0, "k must be greater than 0");
+
+    let mut rng = rand::rng();
+
+    // Create vector of all indices
+    let mut indices: Vec<usize> = Vec::with_capacity(n);
+    indices.extend(0..n);
+
+    for i in 0..k {
+        let j = rng.random_range(i..n);
+        indices.swap(i, j);
+    }
+
+    indices.truncate(k);
+    indices
 }
 
 
