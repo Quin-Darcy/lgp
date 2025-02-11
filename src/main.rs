@@ -25,7 +25,6 @@ fn main() {
     ];
     
     let pop_size: usize = 20;
-    let pop = Population::new(pop_size, training_data, validation_data);
-
-    println!("{}", pop);
+    let mut pop = Population::new(pop_size, training_data, validation_data);
+    let new_prog = pop.evolve();
 }

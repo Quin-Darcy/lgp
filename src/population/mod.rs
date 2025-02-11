@@ -113,6 +113,7 @@ impl Population {
         let max_generations = self.programs.len() / 2;
 
         for _ in 0..max_generations {
+            println!("{}", self);
             let results: TournamentResult = self.tournament_selection();
             self.update_population(&results);
         }
@@ -241,11 +242,52 @@ impl Population {
         assert!(parent1_len >= 2);
         assert!(parent2_len >= 2);
 
-        todo!()
+        // -------------- TESTING - REFACTOR LATER ----------------------------//
+        let mut rng = rand::rng();
+        let mut point1_1 = rng.random_range(0..parent1_len);
+        let mut point1_2 = rng.random_range(0..parent1_len);
+        if point1_1 > point1_2 {
+            std::mem::swap(&mut point1_1, &mut point1_2);
+        }
+
+        let mut point2_1 = rng.random_range(0..parent2_len);
+        let mut point2_2 = rng.random_range(0..parent2_len);
+        if point2_1 > point2_2 {
+            std::mem::swap(&mut point2_1, &mut point2_2);
+        }
+
+        let new_len1 = point1_1 + (point2_2 - point2_1 + 1) + (parent1_len - point1_2 - 1);
+        let new_len2 = point2_1 + (point1_2 - point1_1 + 1) + (parent2_len - point2_2 - 1);
+
+        let mut new_instructions1 = Vec::with_capacity(new_len1);
+        let mut new_instructions2 = Vec::with_capacity(new_len2);
+
+        // Build first program's new instructions
+        new_instructions1.extend_from_slice(&parent1.instructions[..point1_1]);
+        new_instructions1.extend_from_slice(&parent2.instructions[point2_1..=point2_2]);
+        new_instructions1.extend_from_slice(&parent1.instructions[point1_2+1..]);
+
+        // Build second program's new instructions
+        new_instructions2.extend_from_slice(&parent2.instructions[..point2_1]);
+        new_instructions2.extend_from_slice(&parent1.instructions[point1_1..=point1_2]);
+        new_instructions2.extend_from_slice(&parent2.instructions[point2_2+1..]);
+
+        // Create new programs and initialize with instructions
+        let mut new_prog1 = Program::new(new_instructions1.len());
+        new_prog1.instructions = new_instructions1;
+
+        let mut new_prog2 = Program::new(new_instructions2.len());
+        new_prog2.instructions = new_instructions2;
+        
+        // ------------------------------------------------------------------------//
+
+        [new_prog1, new_prog2]
     }
 
     fn mutate(&self, prog: usize) -> Program {
-        todo!()
+        // ---- FOR TESTING ONLY -----//
+        self.programs[prog].clone()
+        // --------------------------//
     }
 }
 
