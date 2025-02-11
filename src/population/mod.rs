@@ -37,10 +37,17 @@ pub struct Population {
 // from 2 to `MAX_INIT_PROG_SIZE` many instructions
 const MAX_INIT_PROG_SIZE: usize = 15;
 
+// Sets the probability for crossover versus mutation
+const CROSSOVER_RATE: f64 = 0.78;
+
+// Sets the probability for performing reproduction
+const REPRODUCTION_RATE: f64 = 0.71;
+
 // This parameter sets how many `Programs` compete in a tournament.
 // The higher the number, the greater the selection pressure but 
 // this decreases diversity.
 const TOURNAMENT_SIZE: usize = 4;
+#[derive(Clone)]
 struct TournamentResult {
     winners: [usize; 2],
     losers: [usize; 2]
@@ -106,10 +113,12 @@ impl Population {
         let max_generations = self.programs.len() / 2;
 
         for _ in 0..max_generations {
-            let selection_results = self.tournament_selection();
+            let results: TournamentResult = self.tournament_selection();
+            self.update_population(&results);
         }
 
-        todo!()
+        // Return the best performing program
+        self.programs[self.training_best_index].clone()
     }
 
     // Select random programs, split group in half, and select
@@ -136,12 +145,14 @@ impl Population {
         let first_group: &[f64] = &competitors[..TOURNAMENT_SIZE];
         let second_group: &[f64] = &competitors[TOURNAMENT_SIZE..(2*TOURNAMENT_SIZE)];
 
-        // This returns the index of the smallest float in the first group
+        // Get the winners and losers
         let first_winner_index: usize = smallest_element_index(first_group);
         let first_loser_index: usize = largest_element_index(first_group);
         let second_winner_index: usize = smallest_element_index(first_group);
         let second_loser_index: usize = largest_element_index(second_group);
 
+        // Get back the indices (wrt self.programs) corresponding to the 
+        // winners and losers
         let first_winner = competitor_indices[first_winner_index];
         let first_loser = competitor_indices[first_loser_index];
         let second_winner = competitor_indices[second_winner_index + TOURNAMENT_SIZE];
@@ -152,8 +163,90 @@ impl Population {
             losers: [first_loser, second_loser]
         }
     }
+    
+    // Takes the two winners of the last tournament, copies them, then
+    // performs either crossover or mutation. After undergoing one
+    // of the variation operators, the modified winners will replace
+    // the spots in the population where the original winners were.
+    //
+    // For the two losers of the tournament, either they or the original 
+    // winners will be put back into the population. This is chosen based
+    // on a probability.
+    fn update_population(&mut self, results: &TournamentResult) {
+        // Store the indicies of the winners and losers
+        let winner_index1: usize = results.winners[0];
+        let winner_index2: usize = results.winners[1];
+        let loser_index1: usize = results.losers[0];
+        let loser_index2: usize = results.losers[1];
 
+        // Clone the original winners and their fitness values
+        let original_winner1: Program = self.programs[winner_index1].clone();
+        let original_winner2: Program = self.programs[winner_index2].clone();
+        let original_winner1_fitness: f64 = self.fitness_values[winner_index1];
+        let original_winner2_fitness: f64 = self.fitness_values[winner_index2];
 
+        // Create two new Programs by applying a variation
+        // operator to the last tournament's winners
+        let mut rng = rand::rng();
+        let new_members: [Program; 2] = if rng.random::<f64>() < CROSSOVER_RATE {
+            self.crossover(winner_index1, winner_index2)
+        } else {
+            [self.mutate(winner_index1), self.mutate(winner_index2)]
+        };
+
+        // Replace the original winners with the new members
+        self.programs[winner_index1] = new_members[0].clone();
+        self.programs[winner_index2] = new_members[1].clone();
+
+        // Update the corresponding fitness value entries
+        self.fitness_values[winner_index1] = mse(
+            &mut self.programs[winner_index1],
+            &self.training_data
+        );
+        self.fitness_values[winner_index2] = mse(
+            &mut self.programs[winner_index2],
+            &self.training_data
+        );
+
+        // Check if either new member usurps the current training best
+        if self.fitness_values[winner_index1] < self.fitness_values[self.training_best_index] {
+            self.training_best_index = winner_index1;
+        }
+        if self.fitness_values[winner_index2] < self.fitness_values[self.training_best_index] {
+            self.training_best_index = winner_index2;
+        }
+
+        // TODO: Add validation stuff here
+        
+        // Perform reproduction of original winners or let
+        // the last tournament's losers stay in the population
+        if rng.random::<f64>() < REPRODUCTION_RATE {
+            self.programs[loser_index1] = original_winner1;
+            self.programs[loser_index2] = original_winner2;
+
+            // Update the corresponding fitness values
+            self.fitness_values[loser_index1] = original_winner1_fitness;
+            self.fitness_values[loser_index2] = original_winner2_fitness;
+        }
+    }
+
+    fn crossover(&self, parent1_index: usize, parent2_index: usize) -> [Program; 2] {
+        // Clone the parent programs and their lengths
+        let parent1: Program = self.programs[parent1_index].clone();
+        let parent2: Program = self.programs[parent2_index].clone();
+        let parent1_len = parent1.instructions.len();
+        let parent2_len = parent2.instructions.len();
+
+        // Crossover only works on programs with 2 or more instructions
+        assert!(parent1_len >= 2);
+        assert!(parent2_len >= 2);
+
+        todo!()
+    }
+
+    fn mutate(&self, prog: usize) -> Program {
+        todo!()
+    }
 }
 
 impl fmt::Display for Population {
