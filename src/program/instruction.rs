@@ -32,11 +32,10 @@
 /// let random_inst = Instruction::random();
 /// ```
 
-use std::fmt;
 use rand::Rng;
 
 use crate::program::operator::Operator;
-use crate::program::{RegisterIndex, TOTAL_VAR_REGISTERS, TOTAL_CONST_REGISTERS};
+use crate::program::RegisterIndex;
 
 /// Instruction representation as 32-bit integer. Encodes the following information
 ///
@@ -72,16 +71,19 @@ impl Instruction {
 
     /// Generate random instruction.
     #[allow(clippy::missing_panics_doc)]
-    #[must_use] pub fn random() -> Self {
+    #[must_use] pub fn random(
+        total_var_registers: usize, 
+        total_const_registers: usize
+    ) -> Self {
         let mut rng = rand::rng();
 
         let operator: Operator = Operator::random();
-        let dst_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..TOTAL_VAR_REGISTERS)).expect("Failed to cast to RegisterIndex");
+        let dst_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..total_var_registers)).expect("Failed to cast to RegisterIndex");
 
-        // If the reg index > TOTAL_VAR_REGISTERS, it is a const reg index. After this
+        // If the reg index > total_var_registers, it is a const reg index. After this
         // determination, offset by subtracting off TOTAL_VAR_REGISERS
-        let opnd1_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS))).expect("Failed to cast to RegisterIndex");
-        let opnd2_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS))).expect("Failed to cast to RegisterIndex");
+        let opnd1_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(total_var_registers + total_const_registers))).expect("Failed to cast to RegisterIndex");
+        let opnd2_reg_index: RegisterIndex = RegisterIndex::try_from(rng.random_range(..(total_var_registers + total_const_registers))).expect("Failed to cast to RegisterIndex");
 
         Self::new(operator, dst_reg_index, opnd1_reg_index, opnd2_reg_index)
     }
@@ -113,48 +115,6 @@ impl PartialEq<u32> for Instruction {
     }
 }
 
-// For displaying the instruction in human-readable form
-impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let symbol = match self.operator() {
-            Operator::Add => "+",
-            Operator::Sub => "-",
-            Operator::Mul => "*",
-            Operator::Div => "/"
-        };
-
-        let opnds: [RegisterIndex; 2] = self.operands();
-        let mut opnd_idx1 = usize::from(opnds[0]);
-        let mut opnd_idx2 = usize::from(opnds[1]);
-
-        let reg_type1 = if opnd_idx1 < TOTAL_VAR_REGISTERS 
-        { 
-            "VR" 
-        } else {
-            opnd_idx1 -= TOTAL_VAR_REGISTERS;
-            "CR"
-        };
-
-        let reg_type2 = if opnd_idx2 < TOTAL_VAR_REGISTERS {
-            "VR"
-        } else {
-            opnd_idx2 -= TOTAL_VAR_REGISTERS;
-            "CR"
-        };
-
-        write!(
-            f, 
-            "VR[{:?}] = {}[{:?}] {} {}[{:?}]", 
-            self.dst(), 
-            reg_type1,
-            opnd_idx1,
-            symbol,
-            reg_type2,
-            opnd_idx2
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,17 +133,27 @@ mod tests {
 
     #[test]
     fn test_instruction_random() {
-        let inst: Instruction = Instruction::random();
+        let total_var_registers: usize = 8;
+        let total_const_registers: usize = 100;
+        let inst: Instruction = Instruction::random(
+            total_var_registers,
+            total_const_registers
+        );
 
         let op = inst.operator();
-        assert!(matches!(op, Operator::Add | Operator::Sub | Operator::Mul | Operator::Div));
+        assert!(
+            matches!(
+                op, 
+                Operator::Add | Operator::Sub | Operator::Mul | Operator::Div
+            )
+        );
 
         let dst: RegisterIndex = inst.dst();
-        assert!(dst < (TOTAL_VAR_REGISTERS as u8));
+        assert!(dst < (total_var_registers as u8));
 
         let opnds: [RegisterIndex; 2] = inst.operands();
-        assert!(opnds[0] < ((TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS) as u8));
-        assert!(opnds[1] < ((TOTAL_VAR_REGISTERS + TOTAL_CONST_REGISTERS) as u8));
+        assert!(opnds[0] < ((total_var_registers + total_const_registers) as u8));
+        assert!(opnds[1] < ((total_var_registers + total_const_registers) as u8));
     }
 
     #[test]

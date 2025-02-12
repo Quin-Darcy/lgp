@@ -1,4 +1,4 @@
-use lgp::population::Population;
+//use lgp::population::Population;
 //use lgp::program::Program;
 
 fn main() {
@@ -23,8 +23,10 @@ fn main() {
         (-7.0, 49.0),
         (-6.0, 36.0)
     ];
-    
-    let pop_size: usize = 20;
+   
+    /*
+    let pop_size: usize = 800;
     let mut pop = Population::new(pop_size, training_data, validation_data);
     let new_prog = pop.evolve();
+    */
 }
