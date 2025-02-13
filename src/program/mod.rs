@@ -1,23 +1,23 @@
 //! Individual program representation and execution.
-//! 
+//!
 //! This module defines how individual programs in the genetic programming system
 //! are represented and executed. Each program consists of:
-//! 
+//!
 //! - A sequence of register-based instructions
 //! - Variable registers for calculations
 //! - Constant registers with fixed values
-//! 
+//!
 //! Programs take a single input and produce a single output, making them
 //! suitable for evolving mathematical functions.
-//! 
+//!
 //! # Example
-//! 
+//!
 //! ```
 //! use lgp::program::Program;
-//! 
+//!
 //! // Create a program with 5 instructions
 //! let mut program = Program::new(5);
-//! 
+//!
 //! // Run the program with input 2.0
 //! let output = program.run(2.0);
 //! ```
@@ -60,35 +60,36 @@ impl Program {
     ///
     /// # Arguments
     /// * `initial_size`: The number of instructions the new program will be initialized with.
+    /// * `config`: The register configuration parameters.
     #[allow(clippy::cast_precision_loss)]
-    #[must_use] pub fn new(
-        initial_size: usize, 
-        config: &RegisterConfig
-    ) -> Self {
-        let mut instructions: Vec<Instruction> = (0..initial_size)
-            .map(|_| Instruction::random(
-                    config.total_var_registers, 
-                    config.total_const_registers
-                )
-            )
-            .collect();
-        
-       Program::mark_introns(&mut instructions, config.output_register);
-
+    #[must_use] pub fn new(initial_size: usize, config: &RegisterConfig) -> Self {
+        // Pre-allocate all vectors with exact capacity
         let mut program = Self {
-            instructions,
-            var_registers: vec![
-                config.initial_var_value; 
-                config.total_var_registers
-            ],
+            instructions: Vec::with_capacity(initial_size),
+            var_registers: vec![config.initial_var_value; config.total_var_registers],
             const_registers: Vec::with_capacity(config.total_const_registers),
-            config: config.clone()
+            config: RegisterConfig { // Avoid clone by constructing directly
+                total_var_registers: config.total_var_registers,
+                total_const_registers: config.total_const_registers,
+                const_start: config.const_start,
+                const_step_size: config.const_step_size,
+                input_register: config.input_register,
+                output_register: config.output_register,
+                initial_var_value: config.initial_var_value
+            }
         };
 
-        program.const_registers = (0..config.total_const_registers)
-            .map(|i| config.const_start + (i as f64) * config.const_step_size)
-            .collect();
+        // Fill instructions
+        program.instructions.extend((0..initial_size).map(|_|
+            Instruction::random(config.total_var_registers, config.total_const_registers)
+        ));
 
+        // Fill const registers
+        program.const_registers.extend((0..config.total_const_registers).map(|i|
+            config.const_start + (i as f64) * config.const_step_size
+        ));
+
+        Program::mark_introns(&mut program.instructions, config.output_register);
         program
     }
 
@@ -119,7 +120,7 @@ impl Program {
     pub fn run(&mut self, input: f64) -> f64 {
         // Reset variable registers before each run
         self.var_registers = vec![
-            self.config.initial_var_value; 
+            self.config.initial_var_value;
             self.config.total_var_registers
         ];
 
@@ -180,7 +181,7 @@ mod tests {
         let inst4 = Instruction(0x03053B3C); // VR[5] = CR[51] / CR[52]
         let inst5 = Instruction(0x0100043D); // VR[0] = VR[4] - CR[53]
         let inst6 = Instruction(0x01000005); // VR[0] = VR[0] - VR[5]
-        
+
         /*
          * VR[2] = -1.0 + 3.0 = 2.0
          * VR[3] = 2.0 * 2.0  = 4.0
@@ -203,8 +204,8 @@ mod tests {
 
         let mut prog = Program::new(6, &config);
         let mut inst_vec: Vec<Instruction> = vec![
-            inst1, inst2, 
-            inst3, inst4, 
+            inst1, inst2,
+            inst3, inst4,
             inst5, inst6
         ];
 
@@ -221,8 +222,8 @@ mod tests {
         let inst3 = Instruction(0x0001_0301); // VR[1] = VR[3] + VR[1]
         let inst4 = Instruction(0x0205_0203); // VR[5] = VR[2] * VR[3] <-- Intron
         let inst5 = Instruction(0x0000_0102); // VR[0] = VR[1] + VR[2]
-        
-        
+
+
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
         Program::mark_introns(&mut instructions, 0);
@@ -237,13 +238,13 @@ mod tests {
 
     //#[test]
     fn test_effective_code_run() {
-        let input: f64 = 2.0; 
+        let input: f64 = 2.0;
         let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
         let inst2 = Instruction(0x0204_0203); // VR[4] = VR[2] * VR[3]
         let inst3 = Instruction(0x0001_0301); // VR[1] = VR[3] + VR[1]
         let inst4 = Instruction(0x0205_0203); // VR[5] = VR[2] * VR[3]
         let inst5 = Instruction(0x0000_0102); // VR[0] = VR[1] + VR[2]
-        
+
         /*
          * VR[2] = 2.0 + 1.0 = 3.0
          * VR[4] = 3.0 * 1.0 = 3.0
@@ -265,7 +266,7 @@ mod tests {
 
         // Create the program
         let mut prog = Program::new(5, &config);
-        
+
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
 
@@ -277,4 +278,3 @@ mod tests {
         assert_eq!(prog.run(input), 6.0);
     }
 }
-
