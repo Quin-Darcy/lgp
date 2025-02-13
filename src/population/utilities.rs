@@ -1,4 +1,4 @@
-use crate::program::Program;
+use crate::program::{Program, RegisterConfig};
 use rand::Rng;
 
 /// Calculate the Mean-Squared Error between set of expected values
@@ -96,8 +96,20 @@ mod tests {
             (4.0, 16.0)
         ];
 
+        // Create the configurations
+        let config = RegisterConfig {
+            total_var_registers: 8,
+            total_const_registers: 100,
+            const_start: -50.0,
+            const_step_size: 1.0,
+            input_register: 1,
+            output_register: 0,
+            initial_var_value: 1.0
+
+        };
+
         // Create the program
-        let mut prog = Program::new(3);
+        let mut prog = Program::new(3, &config);
 
         // Create vector with instructions, then send it to have effective code marked
         let mut instructions: Vec<Instruction> = vec![
@@ -105,7 +117,7 @@ mod tests {
             Instruction(0x0103_0501),   // VR[3] = VR[5] - VR[1]
             Instruction(0x0200_0203)    // VR[0] = VR[2] * VR[3]
         ];
-        Program::mark_introns(&mut instructions);
+        Program::mark_introns(&mut instructions, config.output_register);
 
         // Set the program's instructions equal to the marked code
         prog.instructions = instructions;
