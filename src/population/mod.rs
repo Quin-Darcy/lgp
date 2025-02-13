@@ -2,7 +2,8 @@
 //! the linear genetic program evolution. The `Population` data structure 
 //! represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
-use crate::program::Program;
+use crate::program::{Program, RegisterConfig};
+use crate::program::instruction::Instruction;
 use rand::Rng;
 use std::fmt;
 
@@ -35,18 +36,18 @@ pub struct Population {
 
 // For each `Program` randomly generated, it will have anywhere
 // from 2 to `MAX_INIT_PROG_SIZE` many instructions
-const MAX_INIT_PROG_SIZE: usize = 15;
+const MAX_INIT_PROG_SIZE: usize = 5;
 
 // Sets the probability for crossover versus mutation
-const CROSSOVER_RATE: f64 = 0.78;
+const CROSSOVER_RATE: f64 = 0.74;
 
 // Sets the probability for performing reproduction
-const REPRODUCTION_RATE: f64 = 0.71;
+const REPRODUCTION_RATE: f64 = 0.67;
 
 // This parameter sets how many `Programs` compete in a tournament.
 // The higher the number, the greater the selection pressure but 
 // this decreases diversity.
-const TOURNAMENT_SIZE: usize = 4;
+const TOURNAMENT_SIZE: usize = 20;
 #[derive(Clone)]
 struct TournamentResult {
     winners: [usize; 2],
@@ -63,7 +64,8 @@ impl Population {
     #[must_use] pub fn new(
         population_size: usize, 
         training_data: Vec<(f64, f64)>,
-        validation_data: Vec<(f64, f64)>
+        validation_data: Vec<(f64, f64)>,
+        reg_config: RegisterConfig
     ) -> Self {
         // Initialize population as set of random Programs
         let mut rng = rand::rng();
@@ -73,7 +75,11 @@ impl Population {
             population_size + 1
         };
         let mut programs: Vec<Program> = (0..pop_size)
-            .map(|_| Program::new(rng.random_range(2_usize..MAX_INIT_PROG_SIZE)))
+            .map(|_| Program::new(
+                    rng.random_range(2_usize..MAX_INIT_PROG_SIZE),
+                    &reg_config
+                )
+            )
             .collect();
 
         // Collect the fitness values of the random programs
@@ -110,7 +116,7 @@ impl Population {
         // two new programs. Therefore after the number of generations
         // elapsed is equal to have the population size, all original
         // programs in the population will have been replaced.
-        let max_generations = self.programs.len() / 2;
+        let max_generations = 10000*self.programs.len();
 
         for _ in 0..max_generations {
             println!("{}", self);
@@ -231,63 +237,16 @@ impl Population {
         }
     }
 
-    fn crossover(&self, parent1_index: usize, parent2_index: usize) -> [Program; 2] {
-        // Clone the parent programs and their lengths
-        let parent1: Program = self.programs[parent1_index].clone();
-        let parent2: Program = self.programs[parent2_index].clone();
-        let parent1_len = parent1.instructions.len();
-        let parent2_len = parent2.instructions.len();
-
-        // Crossover only works on programs with 2 or more instructions
-        assert!(parent1_len >= 2);
-        assert!(parent2_len >= 2);
-
-        // -------------- TESTING - REFACTOR LATER ----------------------------//
-        let mut rng = rand::rng();
-        let mut point1_1 = rng.random_range(0..parent1_len);
-        let mut point1_2 = rng.random_range(0..parent1_len);
-        if point1_1 > point1_2 {
-            std::mem::swap(&mut point1_1, &mut point1_2);
-        }
-
-        let mut point2_1 = rng.random_range(0..parent2_len);
-        let mut point2_2 = rng.random_range(0..parent2_len);
-        if point2_1 > point2_2 {
-            std::mem::swap(&mut point2_1, &mut point2_2);
-        }
-
-        let new_len1 = point1_1 + (point2_2 - point2_1 + 1) + (parent1_len - point1_2 - 1);
-        let new_len2 = point2_1 + (point1_2 - point1_1 + 1) + (parent2_len - point2_2 - 1);
-
-        let mut new_instructions1 = Vec::with_capacity(new_len1);
-        let mut new_instructions2 = Vec::with_capacity(new_len2);
-
-        // Build first program's new instructions
-        new_instructions1.extend_from_slice(&parent1.instructions[..point1_1]);
-        new_instructions1.extend_from_slice(&parent2.instructions[point2_1..=point2_2]);
-        new_instructions1.extend_from_slice(&parent1.instructions[point1_2+1..]);
-
-        // Build second program's new instructions
-        new_instructions2.extend_from_slice(&parent2.instructions[..point2_1]);
-        new_instructions2.extend_from_slice(&parent1.instructions[point1_1..=point1_2]);
-        new_instructions2.extend_from_slice(&parent2.instructions[point2_2+1..]);
-
-        // Create new programs and initialize with instructions
-        let mut new_prog1 = Program::new(new_instructions1.len());
-        new_prog1.instructions = new_instructions1;
-
-        let mut new_prog2 = Program::new(new_instructions2.len());
-        new_prog2.instructions = new_instructions2;
-        
-        // ------------------------------------------------------------------------//
-
-        [new_prog1, new_prog2]
+    fn crossover(
+        &self, 
+        parent1_index: usize, 
+        parent2_index: usize
+    ) -> [Program; 2] {
+        todo!()
     }
 
-    fn mutate(&self, prog: usize) -> Program {
-        // ---- FOR TESTING ONLY -----//
-        self.programs[prog].clone()
-        // --------------------------//
+    fn mutate(&self, index: usize) -> Program {
+        todo!()
     }
 }
 
@@ -307,13 +266,13 @@ impl fmt::Display for Population {
             .iter()
             .sum::<f64>() / (self.fitness_values.len() as f64);
 
-        writeln!(f, "--------------------------------------")?;
+        //writeln!(f, "--------------------------------------")?;
         writeln!(f, "Average Fitness Value: {avg_fitness_value:.2}")?;
         writeln!(f, "Average Program Length: {avg_prog_len:.1}")?;
-        writeln!(f, "Best Training Fitness: {}", self.fitness_values[self.training_best_index])?;
-        writeln!(f, "Best Training Length: {}", self.programs[self.training_best_index].instructions.len())?;
-        writeln!(f, "Best Validation Fitness: {}", self.fitness_values[self.validation_best_index])?;
-        write!(f, "Best Validation Length: {}", self.programs[self.validation_best_index].instructions.len())?;
-        write!(f, "\n--------------------------------------")
+        writeln!(f, "Best Training Fitness: {:.3}", self.fitness_values[self.training_best_index])?;
+        writeln!(f, "Best Training Length: {}", self.programs[self.training_best_index].instructions.len())
+        //writeln!(f, "Best Validation Fitness: {}", self.fitness_values[self.validation_best_index])?;
+        //write!(f, "Best Validation Length: {}", self.programs[self.validation_best_index].instructions.len())?;
+        //write!(f, "\n--------------------------------------")
     }
 }
