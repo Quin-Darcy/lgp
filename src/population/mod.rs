@@ -3,7 +3,6 @@
 //! represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
 use crate::program::{Program, RegisterConfig};
-use crate::program::instruction::Instruction;
 use rand::Rng;
 use std::fmt;
 
@@ -15,6 +14,15 @@ use utilities::{
     select_no_replacement
 }; 
 
+/// Struct defining parameters controlling population and evolution
+pub struct PopulationConfig {
+    pub population_size: usize,
+    pub max_init_prog_size: usize,
+    pub crossover_rate: f64,
+    pub reproduction_rate: f64,
+    pub tournament_size: usize,
+    pub reg_config: RegisterConfig
+}
 
 /// Main structure for the management and evolution of the programs.
 ///
@@ -31,23 +39,10 @@ pub struct Population {
     training_best_index: usize,
     validation_best_index: usize,
     training_data: Vec<(f64, f64)>,
-    validation_data: Vec<(f64, f64)>
+    validation_data: Vec<(f64, f64)>,
+    config: PopulationConfig
 }
 
-// For each `Program` randomly generated, it will have anywhere
-// from 2 to `MAX_INIT_PROG_SIZE` many instructions
-const MAX_INIT_PROG_SIZE: usize = 5;
-
-// Sets the probability for crossover versus mutation
-const CROSSOVER_RATE: f64 = 0.74;
-
-// Sets the probability for performing reproduction
-const REPRODUCTION_RATE: f64 = 0.67;
-
-// This parameter sets how many `Programs` compete in a tournament.
-// The higher the number, the greater the selection pressure but 
-// this decreases diversity.
-const TOURNAMENT_SIZE: usize = 20;
 #[derive(Clone)]
 struct TournamentResult {
     winners: [usize; 2],
@@ -62,22 +57,21 @@ impl Population {
     /// - `training_data`: Data on which to train population
     /// - `validation_data`: Data to test generalizability
     #[must_use] pub fn new(
-        population_size: usize, 
         training_data: Vec<(f64, f64)>,
         validation_data: Vec<(f64, f64)>,
-        reg_config: RegisterConfig
+        config: PopulationConfig
     ) -> Self {
         // Initialize population as set of random Programs
         let mut rng = rand::rng();
-        let pop_size = if population_size % 2 == 0 { 
-            population_size 
+        let pop_size = if config.population_size % 2 == 0 { 
+            config.population_size 
         } else {
-            population_size + 1
+            config.population_size + 1
         };
         let mut programs: Vec<Program> = (0..pop_size)
             .map(|_| Program::new(
-                    rng.random_range(2_usize..MAX_INIT_PROG_SIZE),
-                    &reg_config
+                    rng.random_range(2_usize..config.max_init_prog_size),
+                    &config.reg_config
                 )
             )
             .collect();
@@ -97,7 +91,8 @@ impl Population {
             training_best_index,
             validation_best_index: 0,
             training_data,
-            validation_data
+            validation_data,
+            config
         }
     }
 
@@ -119,7 +114,6 @@ impl Population {
         let max_generations = 10000*self.programs.len();
 
         for _ in 0..max_generations {
-            println!("{}", self);
             let results: TournamentResult = self.tournament_selection();
             self.update_population(&results);
         }
@@ -135,7 +129,7 @@ impl Population {
         // index for each chosen individual
         let competitor_indices: Vec<usize> = select_no_replacement(
             self.programs.len(),
-            2 * TOURNAMENT_SIZE
+            2 * self.config.tournament_size
         );
 
         // Store the fitness values for each of the chosen. Note, 
@@ -149,8 +143,8 @@ impl Population {
             .collect();
 
         // Split the group into two halves
-        let first_group: &[f64] = &competitors[..TOURNAMENT_SIZE];
-        let second_group: &[f64] = &competitors[TOURNAMENT_SIZE..(2*TOURNAMENT_SIZE)];
+        let first_group: &[f64] = &competitors[..self.config.tournament_size];
+        let second_group: &[f64] = &competitors[self.config.tournament_size..(2*self.config.tournament_size)];
 
         // Get the winners and losers
         let first_winner_index: usize = smallest_element_index(first_group);
@@ -162,8 +156,8 @@ impl Population {
         // winners and losers
         let first_winner = competitor_indices[first_winner_index];
         let first_loser = competitor_indices[first_loser_index];
-        let second_winner = competitor_indices[second_winner_index + TOURNAMENT_SIZE];
-        let second_loser = competitor_indices[second_loser_index + TOURNAMENT_SIZE];
+        let second_winner = competitor_indices[second_winner_index + self.config.tournament_size];
+        let second_loser = competitor_indices[second_loser_index + self.config.tournament_size];
 
         TournamentResult {
             winners: [first_winner, second_winner],
@@ -195,7 +189,7 @@ impl Population {
         // Create two new Programs by applying a variation
         // operator to the last tournament's winners
         let mut rng = rand::rng();
-        let new_members: [Program; 2] = if rng.random::<f64>() < CROSSOVER_RATE {
+        let new_members: [Program; 2] = if rng.random::<f64>() < self.config.crossover_rate {
             self.crossover(winner_index1, winner_index2)
         } else {
             [self.mutate(winner_index1), self.mutate(winner_index2)]
@@ -227,7 +221,7 @@ impl Population {
         
         // Perform reproduction of original winners or let
         // the last tournament's losers stay in the population
-        if rng.random::<f64>() < REPRODUCTION_RATE {
+        if rng.random::<f64>() < self.config.reproduction_rate {
             self.programs[loser_index1] = original_winner1;
             self.programs[loser_index2] = original_winner2;
 

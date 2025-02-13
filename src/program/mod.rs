@@ -33,13 +33,13 @@ type RegisterIndex = u8;
 /// Struct defining the parameters to setup the variable and constant registers
 #[derive(Clone)]
 pub struct RegisterConfig {
-    total_var_registers: usize,
-    total_const_registers: usize,
-    const_start: f64,
-    const_step_size: f64,
-    input_register: usize,
-    output_register: usize,
-    initial_var_value: f64
+    pub total_var_registers: usize,
+    pub total_const_registers: usize,
+    pub const_start: f64,
+    pub const_step_size: f64,
+    pub input_register: usize,
+    pub output_register: usize,
+    pub initial_var_value: f64
 }
 
 /// The struct which defines the Program. It contains 3 members:
@@ -52,7 +52,7 @@ pub struct Program {
     pub instructions: Vec<Instruction>,
     var_registers: Vec<f64>,
     const_registers: Vec<f64>,
-    reg_config: RegisterConfig
+    config: RegisterConfig
 }
 
 impl Program {
@@ -82,7 +82,7 @@ impl Program {
                 config.total_var_registers
             ],
             const_registers: Vec::with_capacity(config.total_const_registers),
-            reg_config: config.clone()
+            config: config.clone()
         };
 
         program.const_registers = (0..config.total_const_registers)
@@ -119,12 +119,12 @@ impl Program {
     pub fn run(&mut self, input: f64) -> f64 {
         // Reset variable registers before each run
         self.var_registers = vec![
-            self.reg_config.initial_var_value; 
-            self.reg_config.total_var_registers
+            self.config.initial_var_value; 
+            self.config.total_var_registers
         ];
 
         // Set the input register
-        self.var_registers[self.reg_config.input_register] = input;
+        self.var_registers[self.config.input_register] = input;
 
         for inst in &self.instructions {
             // Check the effective instruction flag
@@ -134,17 +134,17 @@ impl Program {
 
             let mut operands = [0.0; 2];
             for (i, &idx) in inst.operands().iter().enumerate() {
-                operands[i] = if idx < u8::try_from(self.reg_config.total_var_registers).expect("Failed to cast to u8") {
+                operands[i] = if idx < u8::try_from(self.config.total_var_registers).expect("Failed to cast to u8") {
                     self.var_registers[idx as usize]
                 } else {
-                    self.const_registers[(idx as usize) - self.reg_config.total_var_registers]
+                    self.const_registers[(idx as usize) - self.config.total_var_registers]
                 };
             }
 
             self.var_registers[inst.dst() as usize] = inst.operator()
                 .execute(operands[0], operands[1]);
         }
-        self.var_registers[self.reg_config.output_register]
+        self.var_registers[self.config.output_register]
     }
 }
 
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn test_program_new() {
         let initial_size: usize = 12;
-        let reg_config = RegisterConfig {
+        let config = RegisterConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
@@ -167,7 +167,7 @@ mod tests {
 
         };
 
-        let program = Program::new(initial_size, &reg_config);
+        let program = Program::new(initial_size, &config);
         assert_eq!(program.instructions.len(), initial_size);
     }
 
@@ -190,7 +190,7 @@ mod tests {
          * VR[0] = -1.0 - 0.5 = -1.5
          */
 
-        let reg_config = RegisterConfig {
+        let config = RegisterConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
@@ -201,14 +201,14 @@ mod tests {
 
         };
 
-        let mut prog = Program::new(6, &reg_config);
+        let mut prog = Program::new(6, &config);
         let mut inst_vec: Vec<Instruction> = vec![
             inst1, inst2, 
             inst3, inst4, 
             inst5, inst6
         ];
 
-        Program::mark_introns(&mut inst_vec, reg_config.output_register);
+        Program::mark_introns(&mut inst_vec, config.output_register);
         prog.instructions = inst_vec;
 
         assert_eq!(prog.run(input), -1.5);
@@ -252,7 +252,7 @@ mod tests {
          * VR[0] = 3.0 + 3.0 = 6.0
          */
 
-        let reg_config = RegisterConfig {
+        let config = RegisterConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
@@ -264,13 +264,13 @@ mod tests {
         };
 
         // Create the program
-        let mut prog = Program::new(5, &reg_config);
+        let mut prog = Program::new(5, &config);
         
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
 
         // Mark introns and update program's code
-        Program::mark_introns(&mut instructions, reg_config.output_register);
+        Program::mark_introns(&mut instructions, config.output_register);
         prog.instructions = instructions;
 
         // Confirm the output equals the correct output

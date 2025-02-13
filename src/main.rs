@@ -1,5 +1,5 @@
-//use lgp::population::Population;
-//use lgp::program::Program;
+use lgp::program::{RegisterConfig};
+use lgp::population::{Population, PopulationConfig};
 
 fn main() {
     let training_data: Vec<(f64, f64)> = vec![
@@ -23,10 +23,26 @@ fn main() {
         (-7.0, 49.0),
         (-6.0, 36.0)
     ];
+
+    let reg_config = RegisterConfig {
+        total_var_registers: 8,
+        total_const_registers: 50,
+        const_start: -10.0,
+        const_step_size: 0.5,
+        input_register: 1,
+        output_register: 0,
+        initial_var_value: 0.0
+    };
+
+    let pop_config = PopulationConfig {
+        population_size: 1000,
+        max_init_prog_size: 20,
+        crossover_rate: 0.78,
+        reproduction_rate: 0.69,
+        tournament_size: 4,
+        reg_config
+    };
    
-    /*
-    let pop_size: usize = 800;
-    let mut pop = Population::new(pop_size, training_data, validation_data);
-    let new_prog = pop.evolve();
-    */
+
+    let mut pop = Population::new(training_data, validation_data, pop_config);
 }
