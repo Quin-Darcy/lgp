@@ -61,7 +61,10 @@ impl Program {
     /// # Arguments
     /// * `initial_size`: The number of instructions the new program will be initialized with.
     #[allow(clippy::cast_precision_loss)]
-    #[must_use] pub fn new(initial_size: usize, config: RegisterConfig) -> Self {
+    #[must_use] pub fn new(
+        initial_size: usize, 
+        config: &RegisterConfig
+    ) -> Self {
         let mut instructions: Vec<Instruction> = (0..initial_size)
             .map(|_| Instruction::random(
                     config.total_var_registers, 
@@ -164,7 +167,7 @@ mod tests {
 
         };
 
-        let program = Program::new(initial_size, reg_config);
+        let program = Program::new(initial_size, &reg_config);
         assert_eq!(program.instructions.len(), initial_size);
     }
 
@@ -198,7 +201,7 @@ mod tests {
 
         };
 
-        let mut prog = Program::new(6, reg_config.clone());
+        let mut prog = Program::new(6, &reg_config);
         let mut inst_vec: Vec<Instruction> = vec![
             inst1, inst2, 
             inst3, inst4, 
@@ -261,7 +264,7 @@ mod tests {
         };
 
         // Create the program
-        let mut prog = Program::new(5, reg_config.clone());
+        let mut prog = Program::new(5, &reg_config);
         
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
