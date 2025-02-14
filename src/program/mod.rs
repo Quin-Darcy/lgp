@@ -33,12 +33,19 @@ type RegisterIndex = u8;
 /// Struct defining the parameters to setup the variable and constant registers
 #[derive(Clone)]
 pub struct RegisterConfig {
+    /// Total number of variable registers
     pub total_var_registers: usize,
+    /// Total number of constant registers
     pub total_const_registers: usize,
+    /// The lower bound on the range of constants
     pub const_start: f64,
+    /// The increment step size for producing the constant range
     pub const_step_size: f64,
+    /// Index number indicating the input register
     pub input_register: usize,
+    /// Index number indicating the output register
     pub output_register: usize,
+    /// The number all variable registers are initialized with
     pub initial_var_value: f64
 }
 

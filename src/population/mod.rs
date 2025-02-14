@@ -15,12 +15,19 @@ use utilities::{
 }; 
 
 /// Struct defining parameters controlling population and evolution
+#[allow(clippy::module_name_repetitions)]
 pub struct PopulationConfig {
+    /// Number of programs in population
     pub population_size: usize,
+    /// Max number of instructions new programs can be initialized with
     pub max_init_prog_size: usize,
+    /// Sets probability of variation operator being crossover
     pub crossover_rate: f64,
+    /// Sets probability of winners from tournament being reproduced and overwritng the losers
     pub reproduction_rate: f64,
+    /// Number of programs to participate in tournament
     pub tournament_size: usize,
+    /// Register configuration struct
     pub reg_config: RegisterConfig
 }
 
