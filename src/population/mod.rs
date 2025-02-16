@@ -14,6 +14,9 @@ use utilities::{
     select_no_replacement
 }; 
 
+// Number of instructions that can be mutated in a single variation
+const MUTATION_STEP_SIZE: usize = 1;
+
 /// Struct defining parameters controlling population and evolution
 #[allow(clippy::module_name_repetitions)]
 pub struct PopulationConfig {
@@ -24,6 +27,8 @@ pub struct PopulationConfig {
     /// Sets probability of variation operator being crossover
     pub crossover_rate: f64,
     /// Sets probability of winners from tournament being reproduced and overwritng the losers
+    /// Sets the rate which the coevolving variation parameters mutate
+    pub learning_rate: f64,
     pub reproduction_rate: f64,
     /// Number of programs to participate in tournament
     pub tournament_size: usize,
@@ -43,6 +48,7 @@ pub struct PopulationConfig {
 pub struct Population {
     programs: Vec<Program>,
     fitness_values: Vec<f64>,
+    mutation_parameters: Vec<f64>,
     training_best_index: usize,
     validation_best_index: usize,
     training_data: Vec<(f64, f64)>,
@@ -95,6 +101,7 @@ impl Population {
         Self {
             programs,
             fitness_values,
+            mutation_parameters: vec![0.5; pop_size],
             training_best_index,
             validation_best_index: 0,
             training_data,
@@ -110,6 +117,7 @@ impl Population {
          * 1. Peform selectoin to return two winners and two losers.
          * 2. Copy winners.
          * 3. Mutate or crossover winners and add to population.
+         *    - Probabilistically mutate the mutation parameters
          * 4. Probabilistically replace losers with original winners.
          * 5. Update training and validation bests.
          */
@@ -196,6 +204,7 @@ impl Population {
         // Create two new Programs by applying a variation
         // operator to the last tournament's winners
         let mut rng = rand::rng();
+        // TODO: Add code to update mutation parameters
         let new_members: [Program; 2] = if rng.random::<f64>() < self.config.crossover_rate {
             self.crossover(winner_index1, winner_index2)
         } else {
@@ -246,6 +255,14 @@ impl Population {
         todo!()
     }
 
+    /*
+     *  Select up to MUTATION_STEP_SIZE many instructions.
+     *  For each of them, make a choice between a micro or macro
+     *  mutation. Where micro refers to changing a constant or
+     *  register. Macro refers to replacing the entire instruction
+     *  with a random one, deleting an instruction, or adding an
+     *  instruction.
+     */
     fn mutate(&self, index: usize) -> Program {
         todo!()
     }
