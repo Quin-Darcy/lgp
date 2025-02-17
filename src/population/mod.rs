@@ -17,6 +17,9 @@ use utilities::{
 // Number of instructions that can be mutated in a single variation
 const MUTATION_STEP_SIZE: usize = 1;
 
+// Sets the step size for self-adapdation
+const SA_STEP_SIZE: f64 = 0.01;
+
 /// Struct defining parameters controlling population and evolution
 #[allow(clippy::module_name_repetitions)]
 pub struct PopulationConfig {
@@ -29,6 +32,7 @@ pub struct PopulationConfig {
     /// Sets probability of winners from tournament being reproduced and overwritng the losers
     /// Sets the rate which the coevolving variation parameters mutate
     pub learning_rate: f64,
+    /// Rate at which winners overwrite losers of tournaments
     pub reproduction_rate: f64,
     /// Number of programs to participate in tournament
     pub tournament_size: usize,
@@ -245,6 +249,39 @@ impl Population {
             self.fitness_values[loser_index1] = original_winner1_fitness;
             self.fitness_values[loser_index2] = original_winner2_fitness;
         }
+    }
+
+    // Perform probabilistic mutation of the winner's mutation parameters.
+    //
+    // The idea is that each program carries with it a parameter that affects
+    // how it undergoes mutation. The parameter is the probability that
+    // a micro-mutation or macro-mutation is selected. This probability is 
+    // itself mutated at a rate set by the learning_rate parameter. This 
+    // is an example of self-adapdation.
+    fn update_parameters(&mut self, index1: usize, index2: usize) {
+        let mut rng = rand::rng();
+        
+        // Early return if no update needed
+        if rng.random::<f64>() >= self.config.learning_rate {
+            return;
+        }
+
+        // Helper closure to update a single parameter
+        let mut update_param = |param: &mut f64| {
+            let step = if rng.random::<f64>() < 0.5 { 
+                SA_STEP_SIZE 
+            } else { 
+                -SA_STEP_SIZE 
+            };
+            let new_value = *param + step;
+            if (0.0..=1.0).contains(&new_value) {
+                *param = new_value;
+            }
+        };
+
+        // Update both parameters
+        update_param(&mut self.mutation_parameters[index1]);
+        update_param(&mut self.mutation_parameters[index2]);
     }
 
     fn crossover(
