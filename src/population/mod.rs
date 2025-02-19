@@ -205,10 +205,12 @@ impl Population {
         let original_winner1_fitness: f64 = self.fitness_values[winner_index1];
         let original_winner2_fitness: f64 = self.fitness_values[winner_index2];
 
+        // Update the self-adaptation mutation parameters of the winners
+        self.update_parameters(winner_index1, winner_index2);
+
         // Create two new Programs by applying a variation
         // operator to the last tournament's winners
         let mut rng = rand::rng();
-        // TODO: Add code to update mutation parameters
         let new_members: [Program; 2] = if rng.random::<f64>() < self.config.crossover_rate {
             self.crossover(winner_index1, winner_index2)
         } else {
