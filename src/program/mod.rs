@@ -96,8 +96,36 @@ impl Program {
             config.const_start + (i as f64) * config.const_step_size
         ));
 
-        Program::mark_introns(&mut program.instructions, config.output_register);
+        //Program::mark_introns(&mut program.instructions, config.output_register);
+        Program::effinit(&mut program.instructions, config.output_register);
         program
+    }
+
+    // Ensures all instructions in a program are effective. This is achieved 
+    // by modifying the destination register of the intron.
+    fn effinit(code: &mut [Instruction], output_register: usize) {
+        // Mark the introns of the given program
+        Program::mark_introns(code, output_register);
+
+        // Get the index of each intron
+        let intron_indices: Vec<usize> = code.iter()
+            .enumerate()    // This gives us the actual indices
+            .filter(|(_, inst)| inst.0 & 0x8000_0000 == 0)  // The introns
+            .map(|(idx, _)| idx) // Isolate the index of the introns
+            .collect(); // Collect them
+
+        
+        // Get all the effective registers
+        let mut effective_regs = vec![
+            RegisterIndex::try_from(output_register).expect("Failed to cast output register")
+        ];
+
+        for inst in code.iter().rev() {
+            effective_regs.extend(inst.operands());
+        }
+
+        // TODO: Finish replacing destination registers of introns
+        // with random selection from effective registers
     }
 
     /// Mark the effective instructions in given code
