@@ -25,6 +25,7 @@
 mod operator;
 pub mod instruction;
 
+use rand::Rng;
 use instruction::Instruction;
 
 // Type alias for register
@@ -124,8 +125,28 @@ impl Program {
             effective_regs.extend(inst.operands());
         }
 
-        // TODO: Finish replacing destination registers of introns
-        // with random selection from effective registers
+        // Remove duplicates
+        effective_regs.sort_unstable();
+        effective_regs.dedup();
+
+        // Replace each intron's destination register with a
+        // randomly selected effective register
+        let mut rng = rand::rng();
+        let er_len: usize = effective_regs.len();
+        for idx in intron_indices {
+            // Clear the destination register
+            code[idx].0 &= 0xFF00_FFFF;
+
+            // Generate new effective replacement register
+            let new_dst_idx: usize = rng.random_range(..er_len);
+            let new_dst: u8 = effective_regs[new_dst_idx];
+            
+            // Replace it with new value
+            code[idx].0 |= (new_dst as u32) << 16;
+        }
+
+        // Re-mark to verify all instructions run
+        Program::mark_introns(code, output_register);
     }
 
     /// Mark the effective instructions in given code
@@ -311,5 +332,13 @@ mod tests {
 
         // Confirm the output equals the correct output
         assert_eq!(prog.run(input), 6.0);
+    }
+
+    #[test]
+    fn test_effinit() {
+        // Write test manually creating program
+        // and confirming that all introns are replaced
+        // with effective registers 
+        todo!()
     }
 }
