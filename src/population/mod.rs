@@ -14,12 +14,6 @@ use utilities::{
     select_no_replacement
 }; 
 
-// Number of instructions that can be mutated in a single variation
-const MUTATION_STEP_SIZE: usize = 1;
-
-// Sets the step size for self-adapdation
-const SA_STEP_SIZE: f64 = 0.01;
-
 /// Struct defining parameters controlling population and evolution
 #[allow(clippy::module_name_repetitions)]
 pub struct PopulationConfig {
@@ -29,13 +23,26 @@ pub struct PopulationConfig {
     pub max_init_prog_size: usize,
     /// Sets probability of variation operator being crossover
     pub crossover_rate: f64,
-    /// Sets probability of winners from tournament being reproduced and overwritng the losers
+    /// Maximum segment length
+    pub max_seg_len: usize,
+    /// Maximum distance between crossover points
+    pub max_cp_dist: usize,
+    /// Maximum difference in segment lengths
+    pub max_seg_diff: usize,
+    /// Number of instructions that can be mutated in a single variation
+    pub mutation_step_size: usize,
+    /// Sets the step size for self-adapdation
+    pub sa_step_size: f64,
     /// Sets the rate which the coevolving variation parameters mutate
     pub learning_rate: f64,
     /// Rate at which winners overwrite losers of tournaments
     pub reproduction_rate: f64,
     /// Number of programs to participate in tournament
     pub tournament_size: usize,
+    /// Minimum program length
+    pub min_prog_len: usize,
+    /// Maximum program length
+    pub max_prog_len: usize,
     /// Register configuration struct
     pub reg_config: RegisterConfig
 }
@@ -130,7 +137,7 @@ impl Population {
         // two new programs. Therefore after the number of generations
         // elapsed is equal to have the population size, all original
         // programs in the population will have been replaced.
-        let max_generations = 10000*self.programs.len();
+        let max_generations = 2*self.programs.len();
 
         for _ in 0..max_generations {
             let results: TournamentResult = self.tournament_selection();
@@ -271,9 +278,9 @@ impl Population {
         // Helper closure to update a single parameter
         let mut update_param = |param: &mut f64| {
             let step = if rng.random::<f64>() < 0.5 { 
-                SA_STEP_SIZE 
+                self.config.sa_step_size 
             } else { 
-                -SA_STEP_SIZE 
+                -self.config.sa_step_size
             };
             let new_value = *param + step;
             if (0.0..=1.0).contains(&new_value) {
@@ -291,11 +298,12 @@ impl Population {
         parent1_index: usize, 
         parent2_index: usize
     ) -> [Program; 2] {
+        
         todo!()
     }
 
     /*
-     *  Select up to MUTATION_STEP_SIZE many instructions.
+     *  Select up to mutation_step_size many instructions.
      *  For each of them, make a choice between a micro or macro
      *  mutation. Where micro refers to changing a constant or
      *  register. Macro refers to replacing the entire instruction

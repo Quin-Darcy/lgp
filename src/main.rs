@@ -38,9 +38,16 @@ fn main() {
         population_size: 1000,
         max_init_prog_size: 20,
         crossover_rate: 0.78,
+        max_seg_len: 5,
+        max_cp_dist: 20,
+        max_seg_diff: 1,
+        mutation_step_size: 1,
+        sa_step_size: 0.1,
         learning_rate: 0.10,
         reproduction_rate: 0.69,
         tournament_size: 4,
+        min_prog_len: 2,
+        max_prog_len: 200,
         reg_config
     };
    
