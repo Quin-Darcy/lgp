@@ -114,38 +114,47 @@ impl Program {
             .filter(|(_, inst)| inst.0 & 0x8000_0000 == 0)  // The introns
             .map(|(idx, _)| idx) // Isolate the index of the introns
             .collect(); // Collect them
-
         
-        // Get all the effective registers
-        let mut effective_regs = vec![
-            RegisterIndex::try_from(output_register).expect("Failed to cast output register")
-        ];
-
-        for inst in code.iter().rev() {
-            effective_regs.extend(inst.operands());
-        }
-
-        // Remove duplicates
-        effective_regs.sort_unstable();
-        effective_regs.dedup();
-
-        // Replace each intron's destination register with a
-        // randomly selected effective register
-        let mut rng = rand::rng();
-        let er_len: usize = effective_regs.len();
+        // NOTE: Effective registers are relative to posistion
+        // If you are the second to last instruction, then you
+        // can only be effective if your destination register 
+        // is the output register or coincides with one of the 
+        // operands in the last instruction.
+        
+        // Loop through the introns
         for idx in intron_indices {
+
+            // Initialize effective registers
+            let mut eff_regs = vec![
+                RegisterIndex::try_from(output_register).expect("failed to cast")
+            ];
+
+            // Step through the code backwards and collect
+            // all effective registers up to the current
+            // instruction at index idx
+            for i in (idx..code.len()).rev() {
+                if eff_regs.contains(&code[i].dst()) {
+                    eff_regs.extend(code[i].operands());
+                }
+            }
+
+            // Remove duplicates
+            eff_regs.sort_unstable();
+            eff_regs.dedup();
+
+            // Replace intron with random effective register
+            let mut rng = rand::rng();
+            let new_dst_idx: usize = rng.random_range(..eff_regs.len());
+            let new_dst: u8 = eff_regs[new_dst_idx];
+        
             // Clear the destination register
             code[idx].0 &= 0xFF00_FFFF;
 
-            // Generate new effective replacement register
-            let new_dst_idx: usize = rng.random_range(..er_len);
-            let new_dst: u8 = effective_regs[new_dst_idx];
-            
-            // Replace it with new value
+            // Replace it with new effective register
             code[idx].0 |= (new_dst as u32) << 16;
         }
 
-        // Re-mark to verify all instructions run
+        // Remark introns
         Program::mark_introns(code, output_register);
     }
 
@@ -271,7 +280,7 @@ mod tests {
         assert_eq!(prog.run(input), -1.5);
     }
 
-    //#[test]
+    #[test]
     fn test_intron_marking() {
         let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
         let inst2 = Instruction(0x0204_0203); // VR[4] = VR[2] * VR[3] <-- Intron
@@ -292,7 +301,7 @@ mod tests {
         assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
     }
 
-    //#[test]
+    #[test]
     fn test_effective_code_run() {
         let input: f64 = 2.0;
         let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
@@ -336,9 +345,40 @@ mod tests {
 
     #[test]
     fn test_effinit() {
-        // Write test manually creating program
-        // and confirming that all introns are replaced
-        // with effective registers 
-        todo!()
+        let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
+        let inst2 = Instruction(0x0204_0203); // VR[4] = VR[2] * VR[3] <-- Intron
+        let inst3 = Instruction(0x0001_0301); // VR[1] = VR[3] + VR[1]
+        let inst4 = Instruction(0x0205_0203); // VR[5] = VR[2] * VR[3] <-- Intron
+        let inst5 = Instruction(0x0000_0102); // VR[0] = VR[1] + VR[2]
+
+        // Create vector of all instructions
+        let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
+
+        // Mark the introns first and confirm there are non-effective registers
+        Program::mark_introns(&mut instructions, 0);
+
+        // We must confirm the correct instructions were marked as introns
+        assert!(instructions[0].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[1].0 & 0x8000_0000 == 0);
+        assert!(instructions[2].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[3].0 & 0x8000_0000 == 0);
+        assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
+
+        // Replace non-effective code with effective code
+        Program::effinit(&mut instructions, 0);
+
+        println!("After effinit:");
+        println!("0x{:x}", instructions[0].0);
+        println!("0x{:x}", instructions[1].0);
+        println!("0x{:x}", instructions[2].0);
+        println!("0x{:x}", instructions[3].0);
+        println!("0x{:x}", instructions[4].0);
+
+        // We must confirm the introns were replaced
+        assert!(instructions[0].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[1].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[2].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[3].0 & 0x8000_0000 == 0x8000_0000);
+        assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
     }
 }
