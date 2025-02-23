@@ -4,7 +4,7 @@
 //! evolution with respect to some fitness function.
 use crate::program::{Program, RegisterConfig};
 use rand::Rng;
-use std::fmt;
+use std::{cmp, fmt};
 
 mod utilities;
 use utilities::{
@@ -298,7 +298,93 @@ impl Population {
         parent1_index: usize, 
         parent2_index: usize
     ) -> [Program; 2] {
+        // Store the lengths of each parent program
+        let prog1_len = self.programs[parent1_index].instructions.len();
+        let prog2_len = self.programs[parent2_index].instructions.len();
+    
+        // Find the smaller of the two programs
+        let mut prog_index1;
+        let mut prog_index2;
+        if prog1_len < prog2_len {
+            prog_index1 = parent1_index;
+            prog_index2 = parent2_index;
+        } else {
+            prog_index1 = parent2_index;
+            prog_index2 = parent1_index;
+        }
+
+        let smaller_len = self.programs[prog_index1].instructions.len();
+        let larger_len = self.programs[prog_index2].instructions.len();
+
+        // Note that exchanging segments has the potential to alter a 
+        // program's size by, at most, max_seg_diff. We need to assure 
+        // that if the program's size is reduced, it doesn't fall below
+        // min_prog_len. Similarly, if the program size is increased, it
+        // must not exceed max_prog_len. 
+        //
+        // Both these cases can be avoided by accounting for 'how far'
+        // the current program sizes are away from the min and max. 
+        // With that, we can make sure to adjust max_seg_diff so that
+        // swapping segments does not result in crossing either 
+        // boundary.
+        //
+        // Ex. If prog1 has 10 instructions and the max_prog_len is 12
+        // then we must make sure the max_seg_len <= 2. Similarly, if 
+        // min_prog_len is 9, then max_seg_len <= 1. 
+        //
+        // We see if the program is closer in length to the max or the min.
+        // We take the minimum between these two distances. We do this for
+        // both programs. This gives us the largest delta either program
+        // can change by while assuring neither will fall below or go over
+        // either boundaries. We finally take the min between this delta 
+        // and the max_seg_diff to give us the final allowed maximum
+        // segment difference.
+        let dist_from_min1: usize = smaller_len - self.config.min_prog_len;
+        let dist_from_max1: usize = self.config.max_prog_len - smaller_len;
+        let min1: usize = cmp::min(dist_from_min1, dist_from_max1);
+
+        let dist_from_min2: usize = larger_len - self.config.min_prog_len;
+        let dist_from_max2: usize = self.config.max_prog_len - larger_len;
+        let min2: usize = cmp::min(dist_from_min2, dist_from_max2);
         
+        // Changing the size of either program by this much or less is 
+        // totally safe.
+        let min_dist: usize = cmp::min(min1, min2);
+
+        // Incorporate our parameter should it be smaller.
+        let max_seg_diff: usize = cmp::min(min_dist, self.config.max_seg_diff);
+
+        // Now we actually begin our choices
+        let mut rng = rand::rng();
+
+        // Select first crossover point from the smaller program
+        let cp1: usize = rng.random_range(0..smaller_len - 1);
+
+        // Select second crossover point from the second program
+        // such that it remains in program bounds and the difference
+        // between itself and cp1 does not exceed max_cp_dist
+        let lower_cp: usize = cmp::max(0, cp1 - self.config.max_cp_dist);
+        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
+        let cp2: usize = rng.random_range(lower_cp..=upper_cp);
+
+        // Calculate the remaining lengths between each crossover
+        // point and the end of the program, for each program
+        let remainder1: usize = smaller_len - cp1;
+        let remainder2: usize = larger_len - cp2;
+
+        // The minimum between both remainders gives an upper bound
+        // which assures we don't generate segments which exceed either
+        // program length
+        let min_remainder: usize = cmp::min(remainder1, remainder2);
+
+        // Select random first segment length
+        let seg_len1: usize = rng.random_range(1..=min_remainder);
+
+        // Select second segment length such that its difference 
+        // is less than or equal to max_seg_diff
+        let lower_seg: usize = cmp::max(1, seg_len1 - max_seg_diff);
+        let upper_seg: usize = cmp::min(larger_len, seg_len1 + max_seg_diff);
+        let seg_len2: usize = rng.random_range(lower_seg..=upper_seg);
         todo!()
     }
 
