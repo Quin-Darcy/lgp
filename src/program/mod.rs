@@ -151,7 +151,7 @@ impl Program {
             code[idx].0 &= 0xFF00_FFFF;
 
             // Replace it with new effective register
-            code[idx].0 |= (new_dst as u32) << 16;
+            code[idx].0 |= u32::from(new_dst) << 16;
         }
 
         // Remark introns
