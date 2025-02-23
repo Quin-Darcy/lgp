@@ -364,6 +364,7 @@ impl Population {
         // such that it remains in program bounds and the difference
         // between itself and cp1 does not exceed max_cp_dist
         let lower_cp: usize = cmp::max(0, cp1 - self.config.max_cp_dist);
+        // Subtract 2 to make sure segment length of at least 1 is possible
         let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
         let cp2: usize = rng.random_range(lower_cp..=upper_cp);
 
