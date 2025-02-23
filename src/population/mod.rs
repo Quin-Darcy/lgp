@@ -3,6 +3,7 @@
 //! represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
 use crate::program::{Program, RegisterConfig};
+use crate::program::instruction::Instruction;
 use rand::Rng;
 use std::{cmp, fmt};
 
@@ -106,8 +107,14 @@ impl Population {
             .map(|x| mse(x, &training_data))
             .collect();
 
+        let val_fitness_values: Vec<f64> = programs
+            .iter_mut()
+            .map(|x| mse(x, &validation_data))
+            .collect();
+
         // The best is defined as the program with the smallest fitness value
         let training_best_index = smallest_element_index(&fitness_values);
+        let validation_best_index = smallest_element_index(&val_fitness_values);
 
         Self {
             programs,
@@ -303,8 +310,8 @@ impl Population {
         let prog2_len = self.programs[parent2_index].instructions.len();
     
         // Find the smaller of the two programs
-        let mut prog_index1;
-        let mut prog_index2;
+        let prog_index1;
+        let prog_index2;
         if prog1_len < prog2_len {
             prog_index1 = parent1_index;
             prog_index2 = parent2_index;
@@ -400,31 +407,31 @@ impl Population {
 
         // Create first new vector
         new_instructions1.extend_from_slice(
-            &self.programs[parent_index1].instructions[..cp1]
+            &self.programs[parent1_index].instructions[..cp1]
         );
         new_instructions1.extend_from_slice(
-            &self.programs[parent_index2].instructions[cp1..cp1 + seg_len2]
+            &self.programs[parent2_index].instructions[cp1..cp1 + seg_len2]
         );
         
         // If segment ends before end of vector, then you need to extend
         // the remaining part of the vector
         if cp1 + seg_len1 < smaller_len - 1 {
             new_instructions1.extend_from_slice(
-                &self.programs[parent_index1].instructions[cp1 + seg_len2..]
+                &self.programs[parent1_index].instructions[cp1 + seg_len2..]
             );
         }
 
         // Create second new vector
         new_instructions2.extend_from_slice(
-            &self.programs[parent_index2].instructions[..cp2]
+            &self.programs[parent2_index].instructions[..cp2]
         );
         new_instructions2.extend_from_slice(
-            &self.programs[parent_index1].instructions[cp2..cp2 + seg_len1]
+            &self.programs[parent1_index].instructions[cp2..cp2 + seg_len1]
         );
         
         if cp2 + seg_len2 < larger_len - 1 {
             new_instructions2.extend_from_slice(
-                &self.programs[parent_index2].instructions[cp2 + seg_len1..]
+                &self.programs[parent2_index].instructions[cp2 + seg_len1..]
             );
         }
 
