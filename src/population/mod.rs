@@ -386,7 +386,57 @@ impl Population {
         let lower_seg: usize = cmp::max(1, seg_len1 - max_seg_diff);
         let upper_seg: usize = cmp::min(larger_len, seg_len1 + max_seg_diff);
         let seg_len2: usize = rng.random_range(lower_seg..=upper_seg);
-        todo!()
+
+        // Initialize the two new vectors
+        let new_prog_len1: usize = smaller_len - seg_len1 + seg_len2;
+        let mut new_instructions1: Vec<Instruction> = Vec::with_capacity(
+            new_prog_len1
+        );
+
+        let new_prog_len2: usize = larger_len - seg_len2 + seg_len1;
+        let mut new_instructions2: Vec<Instruction> = Vec::with_capacity(
+            new_prog_len2
+        );
+
+        // Create first new vector
+        new_instructions1.extend_from_slice(
+            &self.programs[parent_index1].instructions[..cp1]
+        );
+        new_instructions1.extend_from_slice(
+            &self.programs[parent_index2].instructions[cp1..cp1 + seg_len2]
+        );
+        
+        // If segment ends before end of vector, then you need to extend
+        // the remaining part of the vector
+        if cp1 + seg_len1 < smaller_len - 1 {
+            new_instructions1.extend_from_slice(
+                &self.programs[parent_index1].instructions[cp1 + seg_len2..]
+            );
+        }
+
+        // Create second new vector
+        new_instructions2.extend_from_slice(
+            &self.programs[parent_index2].instructions[..cp2]
+        );
+        new_instructions2.extend_from_slice(
+            &self.programs[parent_index1].instructions[cp2..cp2 + seg_len1]
+        );
+        
+        if cp2 + seg_len2 < larger_len - 1 {
+            new_instructions2.extend_from_slice(
+                &self.programs[parent_index2].instructions[cp2 + seg_len1..]
+            );
+        }
+
+        // Create the two new programs
+        let mut new_prog1 = Program::new(new_prog_len1, &self.config.reg_config);
+        let mut new_prog2 = Program::new(new_prog_len2, &self.config.reg_config);
+
+        // Overwrite programs with recombined instructions
+        new_prog1.instructions = new_instructions1;
+        new_prog2.instructions = new_instructions2;
+
+        [new_prog1, new_prog2]
     }
 
     /*
