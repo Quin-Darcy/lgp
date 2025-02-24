@@ -212,6 +212,30 @@ impl Program {
         }
         self.var_registers[self.config.output_register]
     }
+
+    /// Performs crossover between this instance and given instance
+    /// of `Program`
+    ///
+    /// # Arguments
+    /// - `code`: &[Instruction]
+    pub fn crossover(&self, code: &[Instruction]) -> [Program; 2] {
+        // Store the lengths of each parent program
+        let prog1_len: usize = self.instructions.len();
+        let prog2_len: usize = code.len();
+
+        // Find the smaller of the two programs
+        let smaller_len;
+        let larger_len;
+        if prog1_len < prog2_len {
+            smaller_len = prog1_len;
+            larger_len = prog2_len;
+        } else {
+            smaller_len = prog2_len;
+            larger_len = prog1_len;
+        }
+
+        todo!() 
+    }
 }
 
 
