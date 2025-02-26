@@ -1,4 +1,4 @@
-use lgp::program::{RegisterConfig};
+use lgp::program::{ProgramConfig};
 use lgp::population::{Population, PopulationConfig};
 
 fn main() {
@@ -24,31 +24,31 @@ fn main() {
         (-6.0, 36.0)
     ];
 
-    let reg_config = RegisterConfig {
+    let prog_config = ProgramConfig {
         total_var_registers: 8,
         total_const_registers: 50,
         const_start: -10.0,
         const_step_size: 0.5,
         input_register: 1,
         output_register: 0,
-        initial_var_value: 0.0
+        initial_var_value: 0.0,
+        max_seg_len: 5,
+        max_cp_dist: 20,
+        max_seg_diff: 1,
+        mutation_step_size: 1,
+        min_prog_len: 2,
+        max_prog_len: 200
     };
 
     let pop_config = PopulationConfig {
         population_size: 1000,
         max_init_prog_size: 20,
         crossover_rate: 0.78,
-        max_seg_len: 5,
-        max_cp_dist: 20,
-        max_seg_diff: 1,
-        mutation_step_size: 1,
         sa_step_size: 0.1,
         learning_rate: 0.10,
         reproduction_rate: 0.69,
         tournament_size: 4,
-        min_prog_len: 2,
-        max_prog_len: 200,
-        reg_config
+        prog_config
     };
    
 
