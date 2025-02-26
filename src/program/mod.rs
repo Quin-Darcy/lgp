@@ -25,6 +25,7 @@
 mod operator;
 pub mod instruction;
 
+use std::cmp;
 use rand::Rng;
 use instruction::Instruction;
 
@@ -33,7 +34,7 @@ type RegisterIndex = u8;
 
 /// Struct defining the parameters to setup the variable and constant registers
 #[derive(Clone)]
-pub struct RegisterConfig {
+pub struct ProgramConfig {
     /// Total number of variable registers
     pub total_var_registers: usize,
     /// Total number of constant registers
@@ -47,7 +48,19 @@ pub struct RegisterConfig {
     /// Index number indicating the output register
     pub output_register: usize,
     /// The number all variable registers are initialized with
-    pub initial_var_value: f64
+    pub initial_var_value: f64,
+    /// Maximum segment length
+    pub max_seg_len: usize,
+    /// Maximum distance between crossover points
+    pub max_cp_dist: usize,
+    /// Maximum difference in segment lengths
+    pub max_seg_diff: usize,
+    /// Number of instructions that can be mutated in a single variation
+    pub mutation_step_size: usize,
+    /// Minimum program length
+    pub min_prog_len: usize,
+    /// Maximum program length
+    pub max_prog_len: usize
 }
 
 /// The struct which defines the Program. It contains 3 members:
@@ -60,7 +73,7 @@ pub struct Program {
     pub instructions: Vec<Instruction>,
     var_registers: Vec<f64>,
     const_registers: Vec<f64>,
-    config: RegisterConfig
+    config: ProgramConfig
 }
 
 impl Program {
@@ -70,20 +83,26 @@ impl Program {
     /// * `initial_size`: The number of instructions the new program will be initialized with.
     /// * `config`: The register configuration parameters.
     #[allow(clippy::cast_precision_loss)]
-    #[must_use] pub fn new(initial_size: usize, config: &RegisterConfig) -> Self {
+    #[must_use] pub fn new(initial_size: usize, config: &ProgramConfig) -> Self {
         // Pre-allocate all vectors with exact capacity
         let mut program = Self {
             instructions: Vec::with_capacity(initial_size),
             var_registers: vec![config.initial_var_value; config.total_var_registers],
             const_registers: Vec::with_capacity(config.total_const_registers),
-            config: RegisterConfig { // Avoid clone by constructing directly
+            config: ProgramConfig { // Avoid clone by constructing directly
                 total_var_registers: config.total_var_registers,
                 total_const_registers: config.total_const_registers,
                 const_start: config.const_start,
                 const_step_size: config.const_step_size,
                 input_register: config.input_register,
                 output_register: config.output_register,
-                initial_var_value: config.initial_var_value
+                initial_var_value: config.initial_var_value,
+                max_seg_len: config.max_seg_len,
+                max_cp_dist: config.max_cp_dist,
+                max_seg_diff: config.max_seg_diff,
+                mutation_step_size: config.mutation_step_size,
+                min_prog_len: config.min_prog_len,
+                max_prog_len: config.max_prog_len
             }
         };
 
@@ -223,7 +242,7 @@ impl Program {
         let prog1_len: usize = self.instructions.len();
         let prog2_len: usize = code.len();
 
-        // Find the smaller of the two programs
+        // Order the program lengths
         let smaller_len;
         let larger_len;
         if prog1_len < prog2_len {
@@ -234,7 +253,142 @@ impl Program {
             larger_len = prog1_len;
         }
 
-        todo!() 
+        // Note that exchanging segments has the potential to alter a
+        // program's size by, at most, max_seg_diff. We need to assure
+        // that if the program's size is reduced, it doesn't fall below
+        // min_prog_len. Similarly, if the program size is increased, it
+        // must not exceed max_prog_len.
+        //
+        // Both these cases can be avoided by accounting for 'how far'
+        // the current program sizes are away from the min and max.
+        // With that, we can make sure to adjust max_seg_diff so that
+        // swapping segments does not result in crossing either
+        // boundary.
+        //
+        // Ex. If prog1 has 10 instructions and the max_prog_len is 12
+        // then we must make sure the max_seg_len <= 2. Similarly, if
+        // min_prog_len is 9, then max_seg_len <= 1.
+        //
+        // We see if the program is closer in length to the max or the min.
+        // We take the minimum between these two distances. We do this for
+        // both programs. This gives us the largest delta either program
+        // can change by while assuring neither will fall below or go over
+        // either boundaries. We finally take the min between this delta
+        // and the max_seg_diff to give us the final allowed maximum
+        // segment difference.
+
+        let dist_from_min1: usize = smaller_len - self.config.min_prog_len;
+        let dist_from_max1: usize = self.config.max_prog_len - smaller_len;
+        let min1: usize = cmp::min(dist_from_min1, dist_from_max1);
+
+        let dist_from_min2: usize = larger_len - self.config.min_prog_len;
+        let dist_from_max2: usize = self.config.max_prog_len - larger_len;
+        let min2: usize = cmp::min(dist_from_min2, dist_from_max2);
+
+        // Changing the size of either program by this much or less is 
+        // totall safe
+        let min_dist: usize = cmp::min(min1, min2);
+
+        // Incorporate our parameter should it be smaller
+        let max_seg_diff: usize = cmp::min(min_dist, self.config.max_seg_diff);
+
+        // Now we actually begin our choices
+        let mut rng = rand::rng();
+
+        // Select first crossover point from smaller program
+        let cp1: usize = rng.random_range(0..smaller_len - 1);
+
+        // Select second crossover point from the second program
+        // such that it remains in program bounds and the difference
+        // between itself and cp1 does not exceed max_cp_dist
+        let lower_cp: usize = cmp::max(0, cp1 - self.config.max_cp_dist);
+
+        // Subtract 2 to make sure segment length of at least 1 is possible
+        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
+        let cp2: usize = rng.random_range(lower_cp..=upper_cp);
+
+        // Calculate the remaining lengths between each crossover
+        // point and the end of the program, for each program
+        let remainder1: usize = smaller_len - cp1;
+        let remainder2: usize = larger_len - cp2;
+
+        // The minimum between both remainders gives an upper bound
+        // which assures we don't generate segments which exceed either
+        // program length
+        let min_remainder: usize = cmp::min(remainder1, remainder2);
+
+        // Select random first segment length
+        let seg_len1: usize = rng.random_range(1..=min_remainder);
+
+        // Select second segment length such that its difference
+        // is less than or equal to max_seg_diff
+        let lower_seg: usize = cmp::max(1, seg_len1 - max_seg_diff);
+        let upper_seg: usize = cmp::min(larger_len, seg_len1 + max_seg_diff);
+        let seg_len2: usize = rng.random_range(lower_seg..=upper_seg);
+
+        // Initialize the two new vectors
+        let new_prog1_len: usize = smaller_len - seg_len1 + seg_len2;
+        let mut new_instructions1: Vec<Instruction> = Vec::with_capacity(
+            new_prog1_len
+        );
+
+        let new_prog2_len: usize = larger_len - seg_len2 + seg_len1;
+        let mut new_instructions2: Vec<Instruction> = Vec::with_capacity(
+            new_prog2_len
+        );
+
+        // Create first new vector
+        new_instructions1.extend_from_slice(
+            &self.instructions[..cp1]
+        );
+        new_instructions1.extend_from_slice(
+            &code[cp1..cp1 + seg_len2]
+        );
+
+        // If segment ends before end of vector, then you need to extend
+        // the remaining part of the vector
+        if cp1 + seg_len1 < smaller_len - 1 {
+            new_instructions1.extend_from_slice(
+                &self.instructions[cp1 + seg_len2..]
+            );
+        }
+
+        // Create second new vector
+        new_instructions2.extend_from_slice(
+            &code[..cp2]
+        );
+        new_instructions2.extend_from_slice(
+            &self.instructions[cp2..cp2 + seg_len1]
+        );
+
+        if cp2 + seg_len2 < larger_len - 1 {
+            new_instructions2.extend_from_slice(
+                &code[cp2 + seg_len1..]
+            )
+        }
+
+        // Create the two new programs
+        let mut new_prog1 = Program::new(new_prog1_len, &self.config);
+        let mut new_prog2 = Program::new(new_prog2_len, &self.config);
+
+        // Overwrite instructions with recombined instructions
+        new_prog1.instructions = new_instructions1;
+        new_prog2.instructions = new_instructions2;
+
+        [new_prog1, new_prog2]
+    }
+
+    /*
+     * Select up to mutation_step_size many instructions.
+     * For each of them, make a choise between a micro or macro
+     * mutation. Where micro refers to changing a constant or 
+     * register. Macro refers to replacing the entire instruction
+     * with a random one, deleting an instruction, or adding an 
+     * instruction.
+     */
+    /// Performs mutation on this instance
+    pub fn mutate(&self) -> Program {
+        todo!()
     }
 }
 
