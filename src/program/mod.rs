@@ -63,6 +63,27 @@ pub struct ProgramConfig {
     pub max_prog_len: usize
 }
 
+// Default config values
+impl Default for ProgramConfig {
+    fn default() -> Self {
+        ProgramConfig {
+            total_var_registers:8,
+            total_const_registers: 100,
+            const_start: -50.0,
+            const_step_size: 1.0,
+            input_register: 1,
+            output_register: 0,
+            initial_var_value: 1.0,
+            max_seg_len: 5,
+            max_cp_dist: 20,
+            max_seg_diff: 1,
+            mutation_step_size: 1,
+            min_prog_len: 2,
+            max_prog_len: 200
+        }
+    }
+}
+
 /// The struct which defines the Program. It contains 3 members:
 /// - `instructions`: This is the sequence of arithmetic instructions which will execute when the program is run:
 /// - `var_registers`: These are initialized with a constant value at the begining of each test case and are subsequently used for calculation through the running of a program.
@@ -400,7 +421,7 @@ mod tests {
     #[test]
     fn test_program_new() {
         let initial_size: usize = 12;
-        let config = RegisterConfig {
+        let config = ProgramConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
@@ -434,7 +455,7 @@ mod tests {
          * VR[0] = -1.0 - 0.5 = -1.5
          */
 
-        let config = RegisterConfig {
+        let config = ProgramConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
@@ -496,7 +517,7 @@ mod tests {
          * VR[0] = 3.0 + 3.0 = 6.0
          */
 
-        let config = RegisterConfig {
+        let config = ProgramConfig {
             total_var_registers: 8,
             total_const_registers: 100,
             const_start: -50.0,
