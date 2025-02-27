@@ -36,6 +36,22 @@ pub struct PopulationConfig {
     pub prog_config: ProgramConfig
 }
 
+// Default values
+impl Default for PopulationConfig {
+    fn default() -> Self {
+        PopulationConfig {
+            population_size: 1000,
+            max_init_prog_size: 20,
+            crossover_rate: 0.78,
+            sa_step_size: 0.1,
+            learning_rate: 0.10,
+            reproduction_rate: 0.69,
+            tournament_size: 4,
+            prog_config: ProgramConfig::default()
+        }
+    }
+}
+
 /// Main structure for the management and evolution of the programs.
 ///
 /// The members of a `Population` instance are:
