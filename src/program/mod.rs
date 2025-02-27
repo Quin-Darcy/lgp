@@ -337,7 +337,11 @@ impl Program {
         // Select second crossover point from the second program
         // such that it remains in program bounds and the difference
         // between itself and cp1 does not exceed max_cp_dist
-        let lower_cp: usize = cmp::max(0, cp1 - self.config.max_cp_dist);
+        let lower_cp: usize = if cp1 >= self.config.max_cp_dist {
+            cp1 - self.config.max_cp_dist
+        } else {
+            0
+        };
 
         // Subtract 2 to make sure segment length of at least 1 is possible
         let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
