@@ -98,22 +98,7 @@ mod tests {
         ];
 
         // Create the configurations
-        let config = RegisterConfig {
-            total_var_registers: 8,
-            total_const_registers: 100,
-            const_start: -50.0,
-            const_step_size: 1.0,
-            input_register: 1,
-            output_register: 0,
-            initial_var_value: 1.0,
-            max_seg_len: 5,
-            max_cp_dist: 20,
-            max_seg_diff: 1,
-            mutation_step_size: 1,
-            min_prog_len: 2,
-            max_prog_len: 200
-
-        };
+        let config = ProgramConfig::default(); 
 
         // Create the program
         let mut prog = Program::new(3, &config);

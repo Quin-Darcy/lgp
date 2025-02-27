@@ -421,17 +421,7 @@ mod tests {
     #[test]
     fn test_program_new() {
         let initial_size: usize = 12;
-        let config = ProgramConfig {
-            total_var_registers: 8,
-            total_const_registers: 100,
-            const_start: -50.0,
-            const_step_size: 1.0,
-            input_register: 1,
-            output_register: 0,
-            initial_var_value: 1.0
-
-        };
-
+        let config = ProgramConfig::default();
         let program = Program::new(initial_size, &config);
         assert_eq!(program.instructions.len(), initial_size);
     }
@@ -455,16 +445,7 @@ mod tests {
          * VR[0] = -1.0 - 0.5 = -1.5
          */
 
-        let config = ProgramConfig {
-            total_var_registers: 8,
-            total_const_registers: 100,
-            const_start: -50.0,
-            const_step_size: 1.0,
-            input_register: 1,
-            output_register: 0,
-            initial_var_value: 1.0
-
-        };
+        let config = ProgramConfig::default();
 
         let mut prog = Program::new(6, &config);
         let mut inst_vec: Vec<Instruction> = vec![
@@ -517,16 +498,7 @@ mod tests {
          * VR[0] = 3.0 + 3.0 = 6.0
          */
 
-        let config = ProgramConfig {
-            total_var_registers: 8,
-            total_const_registers: 100,
-            const_start: -50.0,
-            const_step_size: 1.0,
-            input_register: 1,
-            output_register: 0,
-            initial_var_value: 1.0
-
-        };
+        let config = ProgramConfig::default();
 
         // Create the program
         let mut prog = Program::new(5, &config);
