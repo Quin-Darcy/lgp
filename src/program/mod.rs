@@ -551,7 +551,7 @@ mod tests {
         assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
 
         // Replace non-effective code with effective code
-        Program::effinit(&mut instructions, 0);
+        Program::effinit(&mut instructions, 0, 8);
 
         println!("After effinit:");
         println!("0x{:x}", instructions[0].0);
