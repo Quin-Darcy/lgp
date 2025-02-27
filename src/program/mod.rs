@@ -138,13 +138,21 @@ impl Program {
         ));
 
         //Program::mark_introns(&mut program.instructions, config.output_register);
-        Program::effinit(&mut program.instructions, config.output_register);
+        Program::effinit(
+            &mut program.instructions, 
+            config.output_register,
+            config.total_var_registers
+        );
         program
     }
 
     // Ensures all instructions in a program are effective. This is achieved 
     // by modifying the destination register of the intron.
-    fn effinit(code: &mut [Instruction], output_register: usize) {
+    fn effinit(
+        code: &mut [Instruction], 
+        output_register: usize, 
+        total_var_registers: usize
+    ) {
         // Mark the introns of the given program
         Program::mark_introns(code, output_register);
 
@@ -174,7 +182,14 @@ impl Program {
             // instruction at index idx
             for i in (idx..code.len()).rev() {
                 if eff_regs.contains(&code[i].dst()) {
-                    eff_regs.extend(code[i].operands());
+                    // Only add operands that are variable registers
+                    for &op in code[i].operands().iter() {
+                        if op < u8::try_from(total_var_registers)
+                            .expect("failed to cast") 
+                        {
+                            eff_regs.push(op)
+                        }
+                    }
                 }
             }
 
