@@ -313,30 +313,43 @@ impl Program {
         // and the max_seg_diff to give us the final allowed maximum
         // segment difference.
 
-        let dist_from_min1: usize = smaller_len - self.config.min_prog_len;
-        let dist_from_max1: usize = self.config.max_prog_len - smaller_len;
-        let min1: usize = cmp::min(dist_from_min1, dist_from_max1);
+        // Notice that the smaller program is necessarily closer to the
+        // minimum allowed length and the larger program is necessarily
+        // closer to the maximum allowed length
+        let dist_from_min: usize = smaller_len - self.config.min_prog_len;
+        let dist_from_max: usize = self.config.max_prog_len - larger_len;
+        
+        // Changing the size of the program by this much or less
+        // is totally safe
+        let min_dist: usize = cmp::min(dist_from_min, dist_from_max);
 
-        let dist_from_min2: usize = larger_len - self.config.min_prog_len;
-        let dist_from_max2: usize = self.config.max_prog_len - larger_len;
-        let min2: usize = cmp::min(dist_from_min2, dist_from_max2);
-
-        // Changing the size of either program by this much or less is 
-        // totall safe
-        let min_dist: usize = cmp::min(min1, min2);
-
-        // Incorporate our parameter should it be smaller
+        // Incorporate our parameter should it be even smaller than min_dist
         let max_seg_diff: usize = cmp::min(min_dist, self.config.max_seg_diff);
 
         // Now we actually begin our choices
         let mut rng = rand::rng();
 
         // Select first crossover point from smaller program
-        let cp1: usize = rng.random_range(0..smaller_len - 1);
+        // Go up to only smaller_len - 2 to assure there is
+        // enough room for segment of at least size 1
+        let cp1: usize = rng.random_range(0..smaller_len - 2);
 
         // Select second crossover point from the second program
         // such that it remains in program bounds and the difference
         // between itself and cp1 does not exceed max_cp_dist
+        //
+        // The idea here is to create a neighborhood of size, at most,
+        // 2*max_cp_dist around cp1. The lower end of that neighborhood
+        // presents the lowest possible cp we can select in program2
+        // and the upper end of the neighborhood represents the highest
+        // possible cp we can select from program2
+        //
+        //                             cp1
+        // -----------------------------*-----------
+        //
+        //                         2max_cp_dist
+        // ------------------------(--------) ---------------------
+        //
         let lower_cp: usize = if cp1 >= self.config.max_cp_dist {
             cp1 - self.config.max_cp_dist
         } else {
@@ -363,7 +376,7 @@ impl Program {
         // Select second segment length such that its difference
         // is less than or equal to max_seg_diff
         let lower_seg: usize = cmp::max(1, seg_len1 - max_seg_diff);
-        let upper_seg: usize = cmp::min(larger_len, seg_len1 + max_seg_diff);
+        let upper_seg: usize = cmp::min(larger_len - cp2 - 1, seg_len1 + max_seg_diff);
         let seg_len2: usize = rng.random_range(lower_seg..=upper_seg);
 
         // Initialize the two new vectors
