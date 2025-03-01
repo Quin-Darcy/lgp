@@ -1,11 +1,6 @@
 use lgp::program::{Program, ProgramConfig};
 use lgp::population::{Population, PopulationConfig};
 
-fn print_program(p: &Program) {
-    for inst in p.instructions.clone() {
-        println!("0x{:x}", inst.0);
-    }
-}
 
 fn main() {
     let training_data: Vec<(f64, f64)> = vec![
@@ -30,24 +25,7 @@ fn main() {
         (-6.0, 36.0)
     ];
 
-    let prog_config = ProgramConfig::default();
-    let prog1 = Program::new(20, &prog_config);
-    let prog2 = Program::new(20, &prog_config);
-
-    println!("Parent 1:");
-    print_program(&prog1);
-
-    println!("Parent 2:");
-    print_program(&prog2);
-
-    let offspring: [Program; 2] = prog1.crossover(&prog2.instructions);
-
-    println!("Offspring 1:");
-    print_program(&offspring[0]);
-
-    println!("Offspring 2:");
-    print_program(&offspring[1]);
-
-    //let pop_config = PopulationConfig::default();
-    //let pop = Population::new(training_data, validation_data, pop_config);
+    let pop_config = PopulationConfig::default();
+    let mut pop = Population::new(training_data, validation_data, pop_config);
+    pop.evolve();
 }
