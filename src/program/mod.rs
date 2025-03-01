@@ -276,12 +276,12 @@ impl Program {
     /// instance is recombinging with
     pub fn crossover(&self, other_code: &[Instruction]) -> [Program; 2] {
         // Order program lengths
-        let (
-            smaller_prog, 
-            smaller_len,
-            larger_prog, 
-            larger_len
-        ): (&[Instruction], usize, &[Instruction], usize)  = if self.instructions.len() < other_code.len() {
+        let (smaller_prog, smaller_len, larger_prog, larger_len): (
+            &[Instruction], 
+            usize, 
+            &[Instruction], 
+            usize
+        ) = if self.instructions.len() < other_code.len() {
             (
                 &self.instructions, 
                 self.instructions.len(), 
@@ -296,6 +296,35 @@ impl Program {
                 self.instructions.len()
             )
         };
+
+        let mut rng = rand::rng();
+
+        // Select the first crossover point from the smaller program
+        let cp1: usize = rng.random_range(0..smaller_len - 1);
+
+        // Select second crossover point from the larger program from
+        // neighborhood around first crossover point
+        let lower_cp: usize = cmp::max(0, cp1.saturating_sub(self.config.max_cp_dist));
+        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist));
+        let cp2: usize = rng.random_range(lower_cp..=upper_cp);
+
+        // Select a segment length which both programs can fit
+        // by taking the smaller of the two largest possible lengths
+        // and further taking the min against the config's max_seg_len
+        let max_seg_len: usize = cmp::min(
+            cmp::min(smaller_len - 1 - cp1, self.config.max_seg_len), 
+            larger_len - 1 - cp2
+        );
+        
+        // Select the first segment
+        let seg_len1: usize = rng.random_range(1..=max_seg_len);
+
+        // The second segment needs to satisfy the following constraints
+        // - length must be at most max_seg_len
+        // - difference in length between seg_len1 is at most max_seg_diff
+        // - seg_diff must be smaller than how close either program is to 
+        // being at the min_prog_len or max_prog_len
+
 
         todo!()
     }
