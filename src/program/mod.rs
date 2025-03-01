@@ -300,17 +300,23 @@ impl Program {
         let mut rng = rand::rng();
 
         // Select the first crossover point from the smaller program
-        let cp1: usize = rng.random_range(0..smaller_len - 1);
+        let cp1: usize = rng.random_range(0..=smaller_len - 2);
 
         // Select second crossover point from the larger program from
-        // neighborhood around first crossover point
+        // neighborhood around first crossover point intersect larger
+        // program's boundaries
         let lower_cp: usize = cmp::max(0, cp1.saturating_sub(self.config.max_cp_dist));
         let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist));
         let cp2: usize = rng.random_range(lower_cp..=upper_cp);
 
-        // Select a segment length which both programs can fit
-        // by taking the smaller of the two largest possible lengths
-        // and further taking the min against the config's max_seg_len
+        // Each program has a crossover point selected and there is some
+        // distance between the end of the each program and their respective
+        // crossover point. This distance represents the largest possible
+        // segment length which can start at that crossover point.
+        //
+        // Select a segment length which is bounded above by the smaller
+        // of the two distances discussed above. Further, it will be bounded
+        // by the max_seg_len should it be even smaller.
         let max_seg_len: usize = cmp::min(
             cmp::min(smaller_len - 1 - cp1, self.config.max_seg_len), 
             larger_len - 1 - cp2
