@@ -78,7 +78,7 @@ impl Default for ProgramConfig {
             max_cp_dist: 20,
             max_seg_diff: 1,
             mutation_step_size: 1,
-            min_prog_len: 2,
+            min_prog_len: 3,
             max_prog_len: 200
         }
     }
@@ -330,9 +330,7 @@ impl Program {
         let mut rng = rand::rng();
 
         // Select first crossover point from smaller program
-        // Go up to only smaller_len - 2 to assure there is
-        // enough room for segment of at least size 1
-        let cp1: usize = rng.random_range(0..smaller_len - 2);
+        let cp1: usize = rng.random_range(0..smaller_len - 1);
 
         // Select second crossover point from the second program
         // such that it remains in program bounds and the difference
@@ -356,9 +354,8 @@ impl Program {
             0
         };
 
-        // Subtract 2 to make sure segment length of at least 1 is possible
-        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
-        let cp2: usize = rng.random_range(lower_cp..=upper_cp);
+        let upper_cp: usize = cmp::min(larger_len - 1, cp1 + self.config.max_cp_dist);
+        let cp2: usize = rng.random_range(lower_cp..upper_cp);
 
         // Calculate the remaining lengths between each crossover
         // point and the end of the program, for each program
@@ -375,17 +372,17 @@ impl Program {
 
         // Select second segment length such that its difference
         // is less than or equal to max_seg_diff
-        let lower_seg: usize = cmp::max(1, seg_len1 - max_seg_diff);
-        let upper_seg: usize = cmp::min(larger_len - cp2 - 1, seg_len1 + max_seg_diff);
-        let seg_len2: usize = rng.random_range(lower_seg..=upper_seg);
+        let lower_seg_len: usize = cmp::max(1, seg_len1 - max_seg_diff);
+        let upper_seg_len: usize = cmp::min(larger_len - cp2, seg_len1 + max_seg_diff);
+        let seg_len2: usize = rng.random_range(lower_seg_len..upper_seg_len);
 
         // Initialize the two new vectors
-        let new_prog1_len: usize = smaller_len - seg_len1 + seg_len2;
+        let new_prog1_len: usize = self.instructions.len() - seg_len1 + seg_len2;
         let mut new_instructions1: Vec<Instruction> = Vec::with_capacity(
             new_prog1_len
         );
 
-        let new_prog2_len: usize = larger_len - seg_len2 + seg_len1;
+        let new_prog2_len: usize = code.len() - seg_len2 + seg_len1;
         let mut new_instructions2: Vec<Instruction> = Vec::with_capacity(
             new_prog2_len
         );
@@ -400,7 +397,7 @@ impl Program {
 
         // If segment ends before end of vector, then you need to extend
         // the remaining part of the vector
-        if cp1 + seg_len1 < smaller_len - 1 {
+        if cp1 + seg_len1 < self.instructions.len() - 1 {
             new_instructions1.extend_from_slice(
                 &self.instructions[cp1 + seg_len2..]
             );
@@ -414,7 +411,7 @@ impl Program {
             &self.instructions[cp2..cp2 + seg_len1]
         );
 
-        if cp2 + seg_len2 < larger_len - 1 {
+        if cp2 + seg_len2 < code.len() - 1 {
             new_instructions2.extend_from_slice(
                 &code[cp2 + seg_len1..]
             )
@@ -441,7 +438,7 @@ impl Program {
      */
     /// Performs mutation on this instance
     pub fn mutate(&self) -> Program {
-        todo!()
+        self.clone()
     }
 }
 
