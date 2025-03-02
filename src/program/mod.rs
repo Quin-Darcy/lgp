@@ -268,6 +268,8 @@ impl Program {
         self.var_registers[self.config.output_register]
     }
 
+    // TODO: Write method to remove non-effecitve code
+
     /// Performs crossover between this instance and given instance
     /// of `Program`
     ///
@@ -354,170 +356,40 @@ impl Program {
             new_prog_len2
         );
 
-        // Populate the first vector as 3 pieces
+        // Fill the new vectors 
         new_instructions1.extend_from_slice(
             &smaller_prog[..cp1]
         );
-
-        todo!()
-    }
-    /*
-    pub fn crossover(&self, code: &[Instruction]) -> [Program; 2] {
-        // Order the program lengths
-        let smaller_len;
-        let larger_len;
-        if self.instructions.len() < code.len() {
-            smaller_len = self.instructions.len();
-            larger_len = code.len()
-        } else {
-            smaller_len = code.len();
-            larger_len = self.instructions.len();
-        }
-
-        // Note that exchanging segments has the potential to alter a
-        // program's size by, at most, max_seg_diff. We need to assure
-        // that if the program's size is reduced, it doesn't fall below
-        // min_prog_len. Similarly, if the program size is increased, it
-        // must not exceed max_prog_len.
-        //
-        // Both these cases can be avoided by accounting for 'how far'
-        // the current program sizes are away from the min and max.
-        // With that, we can make sure to adjust max_seg_diff so that
-        // swapping segments does not result in crossing either
-        // boundary.
-        //
-        // Ex. If prog1 has 10 instructions and the max_prog_len is 12
-        // then we must make sure the max_seg_len <= 2. Similarly, if
-        // min_prog_len is 9, then max_seg_len <= 1.
-        //
-        // We see if the program is closer in length to the max or the min.
-        // We take the minimum between these two distances. We do this for
-        // both programs. This gives us the largest delta either program
-        // can change by while assuring neither will fall below or go over
-        // either boundaries. We finally take the min between this delta
-        // and the max_seg_diff to give us the final allowed maximum
-        // segment difference.
-
-        // Notice that the smaller program is necessarily closer to the
-        // minimum allowed length and the larger program is necessarily
-        // closer to the maximum allowed length
-        let dist_from_min: usize = smaller_len - self.config.min_prog_len;
-        let dist_from_max: usize = self.config.max_prog_len - larger_len;
-        
-        // Changing the size of the program by this much or less
-        // is totally safe
-        let min_dist: usize = cmp::min(dist_from_min, dist_from_max);
-
-        // Incorporate our parameter should it be even smaller than min_dist
-        let max_seg_diff: usize = cmp::min(min_dist, self.config.max_seg_diff);
-
-        // Now we actually begin our choices
-        let mut rng = rand::rng();
-
-        // Select first crossover point from smaller program
-        let smaller_prog_cp: usize = rng.random_range(0..smaller_len - 1);
-
-        // Select second crossover point from the second program
-        // such that it remains in program bounds and the difference
-        // between itself and smaller_prog_cp does not exceed max_cp_dist
-        //
-        // The idea here is to create a neighborhood of size, at most,
-        // 2*max_cp_dist around smaller_prog_cp. The lower end of that neighborhood
-        // represents the lowest possible cp we can select in program2
-        // and the upper end of the neighborhood represents the highest
-        // possible cp we can select from program2 while staying within
-        // max_cp_dist away from smaller_prog_cp
-        //
-        //                             smaller_prog_cp
-        // -----------------------------*-----------
-        //
-        //                         2max_cp_dist
-        // ------------------------(--------) ---------------------
-        //
-
-        // The actual neighborhood is reduced if either the lower or upper 
-        // program bounds bound it further
-        let lower_cp: usize = if smaller_prog_cp >= self.config.max_cp_dist {
-            smaller_prog_cp - self.config.max_cp_dist
-        } else {
-            0
-        };
-        let upper_cp: usize = cmp::min(larger_len - 1, smaller_prog_cp + self.config.max_cp_dist);
-
-        // Select a cp for the larger program
-        let larger_prog_cp: usize = rng.random_range(lower_cp..upper_cp);
-
-        // Calculate the remaining lengths between each crossover
-        // point and the end of the program, for each program
-        let remainder1: usize = smaller_len - smaller_prog_cp;
-        let remainder2: usize = larger_len - larger_prog_cp;
-
-        // The minimum between both remainders gives an upper bound
-        // which assures we don't generate segments that exceed either
-        // programs length
-        let min_remainder: usize = cmp::min(remainder1, remainder2);
-
-        // Select random first segment length
-        let seg_len1: usize = rng.random_range(1..min_remainder);
-
-        // Select second segment length such that its difference
-        // is less than or equal to max_seg_diff
-        let lower_seg_len: usize = cmp::max(1, seg_len1 - max_seg_diff);
-        let upper_seg_len: usize = cmp::min(larger_len - larger_prog_cp, seg_len1 + max_seg_diff);
-        let seg_len2: usize = rng.random_range(lower_seg_len..upper_seg_len);
-
-        // Initialize the two new vectors
-        let new_prog1_len: usize = self.instructions.len() - seg_len1 + seg_len2;
-        let mut new_instructions1: Vec<Instruction> = Vec::with_capacity(
-            new_prog1_len
-        );
-
-        let new_prog2_len: usize = code.len() - seg_len2 + seg_len1;
-        let mut new_instructions2: Vec<Instruction> = Vec::with_capacity(
-            new_prog2_len
-        );
-
-        // Create first new vector
         new_instructions1.extend_from_slice(
-            &self.instructions[..smaller_prog_cp]
+            &larger_prog[cp2..cp2 + seg_len2]
         );
         new_instructions1.extend_from_slice(
-            &code[smaller_prog_cp..smaller_prog_cp + seg_len2]
+            &smaller_prog[cp1 + seg_len1..]
         );
 
-        // If segment ends before end of vector, then you need to extend
-        // the remaining part of the vector
-        if smaller_prog_cp + seg_len1 < self.instructions.len() - 1 {
-            new_instructions1.extend_from_slice(
-                &self.instructions[smaller_prog_cp + seg_len2..]
-            );
-        }
-
-        // Create second new vector
         new_instructions2.extend_from_slice(
-            &code[..larger_prog_cp]
+            &larger_prog[..cp2]
         );
         new_instructions2.extend_from_slice(
-            &self.instructions[larger_prog_cp..larger_prog_cp + seg_len1]
+            &smaller_prog[cp1..cp1 + seg_len1]
+        );
+        new_instructions2.extend_from_slice(
+            &larger_prog[cp2 + seg_len2..]
         );
 
-        if larger_prog_cp + seg_len2 < code.len() - 1 {
-            new_instructions2.extend_from_slice(
-                &code[larger_prog_cp + seg_len1..]
-            )
-        }
+        // Create the two offspring Programs
+        let mut new_prog1 = Program::new(new_prog_len1, &self.config);
+        let mut new_prog2 = Program::new(new_prog_len2, &self.config);
 
-        // Create the two new programs
-        let mut new_prog1 = Program::new(new_prog1_len, &self.config);
-        let mut new_prog2 = Program::new(new_prog2_len, &self.config);
+        // Mark the effective code for each program
+        Program::mark_introns(&mut new_instructions1, self.config.output_register);
+        Program::mark_introns(&mut new_instructions2, self.config.output_register);
 
-        // Overwrite instructions with recombined instructions
         new_prog1.instructions = new_instructions1;
         new_prog2.instructions = new_instructions2;
 
         [new_prog1, new_prog2]
     }
-    */
 
     /*
      * Select up to mutation_step_size many instructions.
@@ -531,6 +403,8 @@ impl Program {
     pub fn mutate(&self) -> Program {
         self.clone()
     }
+
+
 }
 
 
