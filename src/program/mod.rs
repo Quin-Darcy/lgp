@@ -299,10 +299,15 @@ impl Program {
             )
         };
 
+        println!("\n\nSmaller Len: {}", smaller_len);
+        println!("Larger Len: {}", larger_len);
+
         let mut rng = rand::rng();
 
         // Select the first crossover point from the smaller program
-        let cp1: usize = rng.random_range(0..=smaller_len.saturating_sub(2));
+        let cp1: usize = rng.random(0..=smaller_len.saturating_sub(2));
+
+        println!("CP1: {}", cp1);
 
         // Select second crossover point from the larger program from
         // neighborhood around first crossover point intersect larger
@@ -311,21 +316,26 @@ impl Program {
         let upper_cp: usize = cmp::min(larger_len.saturating_sub(2), cp1 + self.config.max_cp_dist);
         let cp2: usize = rng.random_range(lower_cp..=upper_cp);
 
-        // Each program has a crossover point selected and there is some
-        // distance between the end of the each program and their respective
-        // crossover point. This distance represents the largest possible
-        // segment length which can start at that crossover point.
-        //
-        // Select a segment length which is bounded above by the smaller
-        // of the two distances discussed above. Further, it will be bounded
-        // by the max_seg_len should it be even smaller.
-        let max_seg_len: usize = cmp::min(
-            cmp::min(smaller_len.saturating_sub(1 - cp1), self.config.max_seg_len), 
-            larger_len.saturating_sub(1 - cp2)
+        println!("Lower CP: {}", lower_cp);
+        println!("Upper CP: {}", upper_cp);
+        println!("CP2: {}", cp2);
+
+        // The first segment length will be selected between 1, 
+        // which is the minimum segment length, and the minumum
+        // between the largest segment size from the given crossover
+        // point and the max_seg_len
+        let seg_len_upper1: usize = cmp::min(
+            smaller_len.saturating_sub(1 + cp1),
+            self.config.max_seg_len
         );
-        
-        // Select the first segment
-        let seg_len1: usize = rng.random_range(1..=max_seg_len);
+        let seg_len1: usize = if seg_len_upper1 == 1 {
+            1
+        } else {
+            rng.random_range(1..=seg_len_upper1) 
+        };
+
+        println!("Seg Len Upper1: {}", seg_len_upper1);
+        println!("Seg Len1: {}", seg_len1);
 
         // The second segment needs to satisfy the following constraints
         // - length must be at most max_seg_len
@@ -339,10 +349,24 @@ impl Program {
             dist_to_max
         );
 
+        println!("Dist to Min: {}", dist_to_min);
+        println!("Dist to Max: {}", dist_to_max);
+        println!("Max Len Delta: {}", max_len_delta);
+
         // Calculate the lower and upper bounds on the second segment and select
-        let lower_seg_len: usize = cmp::max(1, seg_len1.saturating_sub(max_len_delta));
-        let upper_seg_len: usize = cmp::min(max_seg_len, seg_len1 + max_len_delta);
-        let seg_len2: usize = rng.random_range(lower_seg_len..=upper_seg_len);
+        let val1: usize = cmp::max(1, seg_len1.saturating_sub(max_len_delta));
+        let val2: usize = cmp::min(larger_len.saturating_sub(1 + cp2), seg_len1 + max_len_delta);
+        let lower_seg_len: usize = cmp::min(val1, val2);
+        let upper_seg_len: usize = cmp::max(val1, val2);
+        let seg_len2: usize = if lower_seg_len == upper_seg_len {
+            lower_seg_len
+        } else { 
+            rng.random_range(lower_seg_len..=upper_seg_len) 
+        };
+
+        println!("Lower Seg Len: {}", lower_seg_len);
+        println!("Upper Seg Len: {}", upper_seg_len);
+        println!("Seg Len2: {}\n\n", seg_len2);
 
         // Compute the lengths of the new vectors
         let new_prog_len1: usize = smaller_len - seg_len1 + seg_len2;
