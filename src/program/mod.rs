@@ -306,7 +306,7 @@ impl Program {
         // neighborhood around first crossover point intersect larger
         // program's boundaries
         let lower_cp: usize = cmp::max(0, cp1.saturating_sub(self.config.max_cp_dist));
-        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist));
+        let upper_cp: usize = cmp::min(larger_len - 2, cp1 + self.config.max_cp_dist);
         let cp2: usize = rng.random_range(lower_cp..=upper_cp);
 
         // Each program has a crossover point selected and there is some
@@ -328,8 +328,21 @@ impl Program {
         // The second segment needs to satisfy the following constraints
         // - length must be at most max_seg_len
         // - difference in length between seg_len1 is at most max_seg_diff
-        // - seg_diff must be smaller than how close either program is to 
-        // being at the min_prog_len or max_prog_len
+        // - The delta in the length of either program must be small enough
+        // such that neither fall below min_prog_len or exceed max_prog_len
+        let dist_to_min: usize = smaller_len - self.config.min_prog_len;
+        let dist_to_max: usize = self.config.max_prog_len - larger_len;
+        let max_len_delta: usize = cmp::min(
+            cmp::min(self.config.max_seg_diff, dist_to_min), 
+            dist_to_max
+        );
+
+        // Calculate the lower and upper bounds on the second segment and select
+        let lower_seg_len: usize = cmp::max(1, seg_len1 - max_len_delta);
+        let upper_seg_len: usize = cmp::min(max_seg_len, seg_len1 + max_len_delta);
+        let seg_len2: usize = rng.random_range(lower_seg_len..=upper_seg_len);
+
+        
 
 
         todo!()
