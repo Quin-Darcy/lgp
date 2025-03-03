@@ -268,7 +268,9 @@ impl Program {
         self.var_registers[self.config.output_register]
     }
 
-    // TODO: Write method to remove non-effecitve code
+    fn remove_introns(code: &mut Vec<Instruction>) {
+        code.retain(|inst| inst.0 & 0x8000_0000 != 0)
+    }
 
     /// Performs crossover between this instance and given instance
     /// of `Program`
@@ -383,9 +385,11 @@ impl Program {
         let mut new_prog1 = Program::new(new_prog_len1, &self.config);
         let mut new_prog2 = Program::new(new_prog_len2, &self.config);
 
-        // Mark the effective code for each program
+        // Mark and remove non-effective code
         Program::mark_introns(&mut new_instructions1, self.config.output_register);
+        Program::remove_introns(&mut new_instructions1);
         Program::mark_introns(&mut new_instructions2, self.config.output_register);
+        Program::remove_introns(&mut new_instructions2);
 
         new_prog1.instructions = new_instructions1;
         new_prog2.instructions = new_instructions2;
@@ -548,4 +552,7 @@ mod tests {
         assert!(instructions[3].0 & 0x8000_0000 == 0x8000_0000);
         assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
     }
+
+    // TODO: Test remove_introns
+    // TODO: Test crossover
 }
