@@ -183,7 +183,7 @@ impl Program {
             for i in (idx..code.len()).rev() {
                 if eff_regs.contains(&code[i].dst()) {
                     // Only add operands that are variable registers
-                    for &op in &code[i].operands().iter() {
+                    for &op in &code[i].operands() {
                         if op < u8::try_from(total_var_registers)
                             .expect("failed to cast") 
                         {
@@ -275,7 +275,7 @@ impl Program {
     ///
     /// # Arguments
     /// - `other_code`: Instructions of other parent which this instance is recombinging with
-    #[must_ust] pub fn crossover(&self, other_code: &[Instruction]) -> [Program; 2] {
+    #[must_use] pub fn crossover(&self, other_code: &[Instruction]) -> [Program; 2] {
         // Order program lengths
         let (smaller_prog, smaller_len, larger_prog, larger_len): (
             &[Instruction], 
