@@ -358,8 +358,8 @@ impl Program {
         };
 
         // Compute the lengths of the new vectors
-        let new_prog_len1: usize = smaller_len - seg_len1 + seg_len2;
-        let new_prog_len2: usize = larger_len - seg_len2 + seg_len1;
+        let new_prog_len1: usize = smaller_len.saturating_sub(seg_len1) + seg_len2;
+        let new_prog_len2: usize = larger_len.saturating_sub(seg_len2) + seg_len1;
 
         // Create and allocate memory for the new vectors
         let mut new_instructions1: Vec<Instruction> = Vec::with_capacity(
