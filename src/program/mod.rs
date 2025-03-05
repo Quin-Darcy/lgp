@@ -329,7 +329,7 @@ impl Program {
             smaller_len.saturating_sub(1 + cp1),
             self.config.max_seg_len
         );
-        let seg_len1: usize = if seg_len_upper1 == 1 {
+        let seg_len1: usize = if seg_len_upper1 <= 1 {
             1
         } else {
             rng.random_range(1..=seg_len_upper1) 
