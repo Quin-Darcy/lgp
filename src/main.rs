@@ -1,4 +1,3 @@
-use lgp::program::{Program, ProgramConfig};
 use lgp::population::{Population, PopulationConfig};
 
 

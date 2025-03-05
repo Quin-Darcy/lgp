@@ -34,6 +34,7 @@ type RegisterIndex = u8;
 
 /// Struct defining the parameters to setup the variable and constant registers
 #[derive(Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ProgramConfig {
     /// Total number of variable registers
     pub total_var_registers: usize,
@@ -270,7 +271,12 @@ impl Program {
         self.var_registers[self.config.output_register]
     }
 
-    fn remove_introns(code: &mut Vec<Instruction>, output_reg: usize) {
+    /// Removes non-effective code
+    ///
+    /// # Arguments
+    /// - `code`: Instructions to reduce
+    /// - `output_reg`: Output register
+    pub fn remove_introns(code: &mut Vec<Instruction>, output_reg: usize) {
         Program::mark_introns(code, output_reg);
         code.retain(|inst| inst.0 & 0x8000_0000 != 0);
     }
