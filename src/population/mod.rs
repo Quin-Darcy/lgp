@@ -3,7 +3,6 @@
 //! represents a group of `Programs` undergoing 
 //! evolution with respect to some fitness function.
 use crate::program::{Program, ProgramConfig};
-use crate::program::instruction::Instruction;
 use rand::Rng;
 use std::fmt;
 
@@ -150,7 +149,9 @@ impl Population {
         // programs in the population will have been replaced.
         let max_generations = 2*self.programs.len();
 
-        for _ in 0..max_generations {
+        for i in 0..max_generations {
+            println!("Generation {i}:\n{self}");
+            //println!("Best Fitness: {:.3}", self.fitness_values[self.training_best_index]);
             let results: TournamentResult = self.tournament_selection();
             self.update_population(&results);
         }
@@ -229,15 +230,30 @@ impl Population {
         // Create two new Programs by applying a variation
         // operator to the last tournament's winners
         let mut rng = rand::rng();
-        let new_members: [Program; 2] = if rng.random::<f64>() < self.config.crossover_rate {
+        let mut new_members: [Program; 2] = if rng.random::<f64>() < self.config.crossover_rate {
             self.programs[winner_index1]
                 .crossover(&self.programs[winner_index2].instructions)
         } else {
             [
-                self.programs[winner_index1].mutate(),
-                self.programs[winner_index2].mutate()
+                self.programs[winner_index1].mutate(
+                    self.mutation_parameters[winner_index1]
+                ),
+                self.programs[winner_index2].mutate(
+                    self.mutation_parameters[winner_index2]
+                )
             ]
         };
+
+        // Remove non-effective code
+        Program::remove_introns(
+            &mut new_members[0].instructions,
+            self.config.prog_config.output_register
+        );
+
+        Program::remove_introns(
+            &mut new_members[1].instructions,
+            self.config.prog_config.output_register
+        );
 
         // Replace the original winners with the new members
         self.programs[winner_index1] = new_members[0].clone();
