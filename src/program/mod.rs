@@ -75,7 +75,7 @@ impl Default for ProgramConfig {
             output_register: 0,
             initial_var_value: 1.0,
             max_seg_len: 5,
-            max_cp_dist: 20,
+            max_cp_dist: 6,
             max_seg_diff: 1,
             mutation_step_size: 1,
             min_prog_len: 3,
@@ -268,8 +268,9 @@ impl Program {
         self.var_registers[self.config.output_register]
     }
 
-    fn remove_introns(code: &mut Vec<Instruction>) {
-        code.retain(|inst| inst.0 & 0x8000_0000 != 0)
+    fn remove_introns(code: &mut Vec<Instruction>, output_reg: usize) {
+        Program::mark_introns(code, output_reg);
+        code.retain(|inst| inst.0 & 0x8000_0000 != 0);
     }
 
     /// Performs crossover between this instance and given instance
@@ -386,10 +387,8 @@ impl Program {
         let mut new_prog2 = Program::new(new_prog_len2, &self.config);
 
         // Mark and remove non-effective code
-        Program::mark_introns(&mut new_instructions1, self.config.output_register);
-        Program::remove_introns(&mut new_instructions1);
-        Program::mark_introns(&mut new_instructions2, self.config.output_register);
-        Program::remove_introns(&mut new_instructions2);
+        Program::remove_introns(&mut new_instructions1, self.config.output_register);
+        Program::remove_introns(&mut new_instructions2, self.config.output_register);
 
         new_prog1.instructions = new_instructions1;
         new_prog2.instructions = new_instructions2;
@@ -406,7 +405,7 @@ impl Program {
      * instruction.
      */
     /// Performs mutation on this instance
-    #[must_use] pub fn mutate(&self) -> Program {
+    #[must_use] pub fn mutate(&self, mutation_type: f64) -> Program {
         self.clone()
     }
 
@@ -551,6 +550,30 @@ mod tests {
         assert!(instructions[2].0 & 0x8000_0000 == 0x8000_0000);
         assert!(instructions[3].0 & 0x8000_0000 == 0x8000_0000);
         assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
+    }
+
+    #[test]
+    fn test_remove_introns() {
+        let mut inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
+        let inst2 = Instruction(0x0204_0203); // VR[4] = VR[2] * VR[3] <-- Intron
+        let mut inst3 = Instruction(0x0001_0301); // VR[1] = VR[3] + VR[1]
+        let inst4 = Instruction(0x0205_0203); // VR[5] = VR[2] * VR[3] <-- Intron
+        let mut inst5 = Instruction(0x0000_0102); // VR[0] = VR[1] + VR[2]
+
+        // Create vector of all instructions
+        let mut instructions = vec![inst1.clone(), inst2, inst3.clone(), inst4, inst5.clone()];
+
+        // Set the high-bit on the effective instructions
+        inst1.0 |= 0x8000_0000;
+        inst3.0 |= 0x8000_0000;
+        inst5.0 |= 0x8000_0000;
+
+        // Create vector containing expected instructions
+        let ex_instructions = vec![inst1, inst3, inst5];
+
+        Program::remove_introns(&mut instructions, 0);
+
+        assert_eq!(instructions, ex_instructions);
     }
 
     // TODO: Test remove_introns
