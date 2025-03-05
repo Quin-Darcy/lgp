@@ -1,4 +1,4 @@
-//! Individual program representation and execution.
+
 //!
 //! This module defines how individual programs in the genetic programming system
 //! are represented and executed. Each program consists of:
@@ -227,6 +227,8 @@ impl Program {
             if effective_regs.contains(&inst.dst()) {
                 effective_regs.extend(inst.operands());
                 inst.0 |= 0x8000_0000;
+            } else {
+                inst.0 &= 0x0FFF_FFFF;
             }
         }
     }
@@ -385,10 +387,6 @@ impl Program {
         // Create the two offspring Programs
         let mut new_prog1 = Program::new(new_prog_len1, &self.config);
         let mut new_prog2 = Program::new(new_prog_len2, &self.config);
-
-        // Mark and remove non-effective code
-        Program::remove_introns(&mut new_instructions1, self.config.output_register);
-        Program::remove_introns(&mut new_instructions2, self.config.output_register);
 
         new_prog1.instructions = new_instructions1;
         new_prog2.instructions = new_instructions2;
@@ -576,6 +574,90 @@ mod tests {
         assert_eq!(instructions, ex_instructions);
     }
 
-    // TODO: Test remove_introns
-    // TODO: Test crossover
+    #[test]
+    fn test_crossover_fuzz() {
+        let config = ProgramConfig::default();
+        
+        // Run many iterations with random program sizes
+        let mut rng = rand::rng();
+        for _ in 0..100 {
+            let len1 = rng.random_range(
+                config.min_prog_len..=config.max_prog_len
+            );
+            let len2 = rng.random_range(
+                config.min_prog_len..=config.max_prog_len
+            );
+            
+            let prog1 = Program::new(len1, &config);
+            let prog2 = Program::new(len2, &config);
+            
+            // This should run without panicking
+            let offspring = prog1.crossover(&prog2.instructions);
+            
+            // Basic validation
+            assert!(offspring[0].instructions.len() >= config.min_prog_len);
+            assert!(offspring[1].instructions.len() >= config.min_prog_len);
+            assert!(offspring[0].instructions.len() <= config.max_prog_len);
+            assert!(offspring[1].instructions.len() <= config.max_prog_len);
+        }
+    }
+
+    #[test]
+    fn test_crossover_instruction_transfer() {
+        let config = ProgramConfig::default();
+        
+        // Create programs with known instructions
+        let mut prog1 = Program::new(0, &config);
+        let mut prog2 = Program::new(0, &config);
+        
+        // Create instructions that are genuinely effective by making all of them
+        // manipulate the output register and leaving source registers distinct
+        prog1.instructions = (0..10).map(|i| {
+            // Format: 0x0000YYZZ where:
+            // 00 = operator (0 = Add)
+            // 00 = destination register (0 = output register)
+            // YY = source register 1 (different for each program)
+            // ZZ = source register 2 (increasing with i)
+            Instruction(0x00000100 + i)
+        }).collect();
+        
+        prog2.instructions = (0..10).map(|i| {
+            // Same pattern but different source register 1
+            Instruction(0x00000200 + i)
+        }).collect();
+        
+        // Perform crossover
+        let offspring = prog1.crossover(&prog2.instructions);
+        
+        // Check offspring 1 has instructions from both parents
+        let offspring1_has_prog1 = offspring[0].instructions.iter()
+            .any(|inst| {
+                let src_reg = (inst.0 >> 8) & 0xFF;
+                src_reg == 0x01
+            });
+        
+        let offspring1_has_prog2 = offspring[0].instructions.iter()
+            .any(|inst| {
+                let src_reg = (inst.0 >> 8) & 0xFF;
+                src_reg == 0x02
+            });
+        
+        // Check offspring 2 has instructions from both parents
+        let offspring2_has_prog1 = offspring[1].instructions.iter()
+            .any(|inst| {
+                let src_reg = (inst.0 >> 8) & 0xFF;
+                src_reg == 0x01
+            });
+        
+        let offspring2_has_prog2 = offspring[1].instructions.iter()
+            .any(|inst| {
+                let src_reg = (inst.0 >> 8) & 0xFF;
+                src_reg == 0x02
+            });
+        
+        assert!(offspring1_has_prog1);
+        assert!(offspring1_has_prog2);
+        assert!(offspring2_has_prog1);
+        assert!(offspring2_has_prog2);
+    }
 }
