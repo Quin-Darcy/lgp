@@ -373,22 +373,30 @@ impl Program {
         new_instructions1.extend_from_slice(
             &smaller_prog[..cp1]
         );
-        new_instructions1.extend_from_slice(
-            &larger_prog[cp2..cp2 + seg_len2]
-        );
-        new_instructions1.extend_from_slice(
-            &smaller_prog[cp1 + seg_len1..]
-        );
+        if cp2 + seg_len2 < larger_len {
+            new_instructions1.extend_from_slice(
+                &larger_prog[cp2..cp2 + seg_len2]
+            );
+        }
+        if cp1 + seg_len1 < smaller_len {
+            new_instructions1.extend_from_slice(
+                &smaller_prog[cp1 + seg_len1..]
+            );
+        }
 
         new_instructions2.extend_from_slice(
             &larger_prog[..cp2]
         );
-        new_instructions2.extend_from_slice(
-            &smaller_prog[cp1..cp1 + seg_len1]
-        );
-        new_instructions2.extend_from_slice(
-            &larger_prog[cp2 + seg_len2..]
-        );
+        if cp1 + seg_len1 < smaller_len {
+            new_instructions2.extend_from_slice(
+                &smaller_prog[cp1..cp1 + seg_len1]
+            );
+        }
+        if cp2 + seg_len2 < larger_len {
+            new_instructions2.extend_from_slice(
+                &larger_prog[cp2 + seg_len2..]
+            );
+        }
 
         // Create the two offspring Programs
         let mut new_prog1 = Program::new(new_prog_len1, &self.config);
