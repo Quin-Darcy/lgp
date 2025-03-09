@@ -24,7 +24,11 @@ fn main() {
         (-6.0, 36.0)
     ];
 
-    let pop_config = PopulationConfig::default();
+    let mut pop_config = PopulationConfig::default();
+    pop_config.prog_config.total_const_registers = 10;
+    pop_config.prog_config.const_start = -1.0;
+    pop_config.prog_config.const_step_size = 0.2;
+    pop_config.prog_config.min_prog_len = 1;
     let mut pop = Population::new(training_data, validation_data, pop_config);
     pop.evolve();
 }
