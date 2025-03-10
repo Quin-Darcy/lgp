@@ -151,7 +151,7 @@ impl Population {
 
         for i in 0..max_generations {
             println!("Generation {i}:\n{self}");
-            //println!("Best Fitness: {:.3}", self.fitness_values[self.training_best_index]);
+
             let results: TournamentResult = self.tournament_selection();
             self.update_population(&results);
         }
