@@ -58,6 +58,8 @@ pub struct ProgramConfig {
     pub max_seg_diff: usize,
     /// Number of instructions that can be mutated in a single variation
     pub mutation_step_size: usize,
+    /// The rate we insert (versus delete) instruction during macro mutation
+    pub insertion_rate: f64,
     /// Minimum program length
     pub min_prog_len: usize,
     /// Maximum program length
@@ -79,6 +81,7 @@ impl Default for ProgramConfig {
             max_cp_dist: 6,
             max_seg_diff: 1,
             mutation_step_size: 1,
+            insertion_rate: 0.5,
             min_prog_len: 1,
             max_prog_len: 200
         }
@@ -123,6 +126,7 @@ impl Program {
                 max_cp_dist: config.max_cp_dist,
                 max_seg_diff: config.max_seg_diff,
                 mutation_step_size: config.mutation_step_size,
+                insertion_rate: config.insertion_rate,
                 min_prog_len: config.min_prog_len,
                 max_prog_len: config.max_prog_len
             }
@@ -418,10 +422,22 @@ impl Program {
      */
     /// Performs mutation on this instance
     #[must_use] pub fn mutate(&self, mutation_type: f64) -> Program {
+        let mut rng = rand::rng();
+        if rng.random::<f64>() < mutation_type {
+            // Macro mutation
+            
+            // Select between insertion or deletion
+            if rng.random::<f64>() < self.config.insertion_rate {
+                
+            } else {
+
+            }
+        } else {
+            // Micro mutation
+        
+        }
         self.clone()
     }
-
-
 }
 
 
