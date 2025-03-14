@@ -142,7 +142,6 @@ impl Program {
             config.const_start + (i as f64) * config.const_step_size
         ));
 
-        //Program::mark_introns(&mut program.instructions, config.output_register);
         Program::effinit(
             &mut program.instructions, 
             config.output_register,
@@ -159,7 +158,7 @@ impl Program {
         total_var_registers: usize
     ) {
         // Mark the introns of the given program
-        Program::mark_introns(code, output_register);
+        Program::mark_introns(code, output_register, total_var_registers);
 
         // Get the index of each intron
         let intron_indices: Vec<usize> = code.iter()
@@ -215,7 +214,7 @@ impl Program {
         }
 
         // Remark introns
-        Program::mark_introns(code, output_register);
+        Program::mark_introns(code, output_register, total_var_registers);
     }
 
     /// Mark the effective instructions in given code
@@ -223,14 +222,24 @@ impl Program {
     /// # Arguments
     /// - `code`: Full program to be marked
     #[allow(clippy::missing_panics_doc)]
-    pub fn mark_introns(code: &mut [Instruction], output_register: usize) {
+    pub fn mark_introns(
+        code: &mut [Instruction], 
+        output_register: usize,
+        total_var_regs: usize
+    ) {
         let mut effective_regs: Vec<RegisterIndex> = vec![
             RegisterIndex::try_from(output_register).expect("Failed to cast")
         ];
 
         for inst in code.iter_mut().rev() {
             if effective_regs.contains(&inst.dst()) {
-                effective_regs.extend(inst.operands());
+                // Only add operands that are variable registers
+                for &op in &inst.operands() {
+                    if op < u8::try_from(total_var_regs)
+                        .expect("failed to cast") {
+                            effective_regs.push(op);
+                    }
+                }
                 inst.0 |= 0x8000_0000;
             } else {
                 inst.0 &= 0x0FFF_FFFF;
@@ -280,8 +289,12 @@ impl Program {
     /// # Arguments
     /// - `code`: Instructions to reduce
     /// - `output_reg`: Output register
-    pub fn remove_introns(code: &mut Vec<Instruction>, output_reg: usize) {
-        Program::mark_introns(code, output_reg);
+    pub fn remove_introns(
+        code: &mut Vec<Instruction>, 
+        output_reg: usize,
+        total_var_regs: usize
+    ) {
+        Program::mark_introns(code, output_reg, total_var_regs);
         code.retain(|inst| inst.0 & 0x8000_0000 != 0);
     }
 
@@ -481,7 +494,11 @@ mod tests {
             inst5, inst6
         ];
 
-        Program::mark_introns(&mut inst_vec, config.output_register);
+        Program::mark_introns(
+            &mut inst_vec, 
+            config.output_register, 
+            config.total_var_registers
+        );
         prog.instructions = inst_vec;
 
         assert_eq!(prog.run(input), -1.5);
@@ -498,7 +515,7 @@ mod tests {
 
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
-        Program::mark_introns(&mut instructions, 0);
+        Program::mark_introns(&mut instructions, 0, 8);
 
         // We must confirm the correct instructions were marked as introns
         assert!(instructions[0].0 & 0x8000_0000 == 0x8000_0000);
@@ -537,6 +554,7 @@ mod tests {
             max_cp_dist: 6,
             max_seg_diff: 1,
             mutation_step_size: 1,
+            insertion_rate: 0.5,
             min_prog_len: 3,
             max_prog_len: 200
         };
@@ -548,7 +566,11 @@ mod tests {
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
 
         // Mark introns and update program's code
-        Program::mark_introns(&mut instructions, config.output_register);
+        Program::mark_introns(
+            &mut instructions, 
+            config.output_register, 
+            config.total_var_registers
+        );
         prog.instructions = instructions;
 
         // Confirm the output equals the correct output
@@ -567,7 +589,7 @@ mod tests {
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
 
         // Mark the introns first and confirm there are non-effective registers
-        Program::mark_introns(&mut instructions, 0);
+        Program::mark_introns(&mut instructions, 0, 8);
 
         // We must confirm the correct instructions were marked as introns
         assert!(instructions[0].0 & 0x8000_0000 == 0x8000_0000);
@@ -613,7 +635,7 @@ mod tests {
         // Create vector containing expected instructions
         let ex_instructions = vec![inst1, inst3, inst5];
 
-        Program::remove_introns(&mut instructions, 0);
+        Program::remove_introns(&mut instructions, 0, 8);
 
         assert_eq!(instructions, ex_instructions);
     }

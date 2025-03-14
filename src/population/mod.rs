@@ -247,12 +247,14 @@ impl Population {
         // Remove non-effective code
         Program::remove_introns(
             &mut new_members[0].instructions,
-            self.config.prog_config.output_register
+            self.config.prog_config.output_register,
+            self.config.prog_config.total_var_registers
         );
 
         Program::remove_introns(
             &mut new_members[1].instructions,
-            self.config.prog_config.output_register
+            self.config.prog_config.output_register,
+            self.config.prog_config.total_var_registers
         );
 
         // Replace the original winners with the new members

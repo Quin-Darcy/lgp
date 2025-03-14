@@ -110,6 +110,7 @@ mod tests {
             max_cp_dist: 6,
             max_seg_diff: 1,
             mutation_step_size: 1,
+            insertion_rate: 0.5,
             min_prog_len: 3,
             max_prog_len: 200
         }; 
@@ -123,7 +124,11 @@ mod tests {
             Instruction(0x0103_0501),   // VR[3] = VR[5] - VR[1]
             Instruction(0x0200_0203)    // VR[0] = VR[2] * VR[3]
         ];
-        Program::mark_introns(&mut instructions, config.output_register);
+        Program::mark_introns(
+            &mut instructions, 
+            config.output_register, 
+            config.total_var_registers
+        );
 
         // Set the program's instructions equal to the marked code
         prog.instructions = instructions;
