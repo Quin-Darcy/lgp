@@ -444,12 +444,14 @@ impl Program {
         if rng.random::<f64>() < mutation_type {
             // Macro mutation
             
+            // Generate random index
+            let i: usize = rng.random_range(0..prog_len);
+            
             // Select between insertion or deletion
             if rng.random::<f64>() < self.config.insertion_rate {
                 if prog_len < new_prog.config.max_prog_len ||
                     prog_len == new_prog.config.min_prog_len {
-                    // Generate a random index
-                    let i: usize = rng.random_range(0..prog_len);
+                    // Insertion
 
                     // Create random instruction
                     let new_inst = Instruction::random(
@@ -461,11 +463,15 @@ impl Program {
                     new_prog.instructions.insert(i, new_inst);
                     
                     // TODO: Add effective mutation part here
-                    
-
                 }
             } else {
+                if prog_len > new_prog.config.min_prog_len || 
+                    prog_len == new_prog.config.max_prog_len {
+                    // Deletion
 
+                    // Delete instruction at the index
+                    new_prog.instructions.remove(i);
+                }
             }
         } else {
             // Micro mutation
