@@ -436,12 +436,34 @@ impl Program {
     /// Performs mutation on this instance
     #[must_use] pub fn mutate(&self, mutation_type: f64) -> Program {
         let mut rng = rand::rng();
+
+        // Create a mutable clone of the program
+        let mut new_prog: Program = self.clone();
+        let prog_len: usize = new_prog.instructions.len();
+
         if rng.random::<f64>() < mutation_type {
             // Macro mutation
             
             // Select between insertion or deletion
             if rng.random::<f64>() < self.config.insertion_rate {
-                
+                if prog_len < new_prog.config.max_prog_len ||
+                    prog_len == new_prog.config.min_prog_len {
+                    // Generate a random index
+                    let i: usize = rng.random_range(0..prog_len);
+
+                    // Create random instruction
+                    let new_inst = Instruction::random(
+                        new_prog.config.total_var_registers,
+                        new_prog.config.total_const_registers
+                    );
+
+                    // Insert the new instruction at the random index
+                    new_prog.instructions.insert(i, new_inst);
+                    
+                    // TODO: Add effective mutation part here
+                    
+
+                }
             } else {
 
             }
@@ -449,7 +471,8 @@ impl Program {
             // Micro mutation
         
         }
-        self.clone()
+
+        new_prog
     }
 }
 
