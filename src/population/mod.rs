@@ -98,7 +98,9 @@ impl Population {
         };
         let mut programs: Vec<Program> = (0..pop_size)
             .map(|_| Program::new(
-                    rng.random_range(2_usize..config.max_init_prog_size),
+                    rng.random_range(
+                        config.prog_config.min_prog_len..=config.max_init_prog_size
+                    ),
                     &config.prog_config
                 )
             )
@@ -147,7 +149,7 @@ impl Population {
         // two new programs. Therefore after the number of generations
         // elapsed is equal to have the population size, all original
         // programs in the population will have been replaced.
-        let max_generations = 2*self.programs.len();
+        let max_generations = 1000*self.programs.len();
 
         for i in 0..max_generations {
             println!("Generation {i}:\n{self}");
@@ -226,6 +228,10 @@ impl Population {
 
         // Update the self-adaptation mutation parameters of the winners
         self.update_parameters(winner_index1, winner_index2);
+
+        if self.programs[winner_index1].instructions.len() == 0 || self.programs[winner_index2].instructions.len() == 0 {
+            println!("update pop - zero len prog");
+        }
 
         // Create two new Programs by applying a variation
         // operator to the last tournament's winners
