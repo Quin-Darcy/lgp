@@ -43,7 +43,7 @@ use crate::program::RegisterIndex;
 /// - Destination Register: Index for the destination register.
 /// - Operand 1: Index for the first operand.
 /// - Operand 2: Index for the second operand.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct Instruction(pub u32);
 
 impl Instruction {
