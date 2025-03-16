@@ -134,7 +134,10 @@ impl Program {
 
         // Fill instructions
         program.instructions.extend((0..initial_size).map(|_|
-            Instruction::random(config.total_var_registers, config.total_const_registers)
+            Instruction::random(
+                config.total_var_registers, 
+                config.total_const_registers
+            )
         ));
 
         // Fill const registers
@@ -142,11 +145,25 @@ impl Program {
             config.const_start + (i as f64) * config.const_step_size
         ));
 
+        // If not empty, ensure last instruction has output 
+        // register as destination
+        if !program.instructions.is_empty() {
+            let last_idx = program.instructions.len() - 1;
+            // Clear destination register bits and set to output register
+            program.instructions[last_idx].0 &= 0xFF00FFFF;
+            program.instructions[last_idx].0 |= (config.output_register as u32) << 16;
+        }
+
         Program::effinit(
             &mut program.instructions, 
             config.output_register,
             config.total_var_registers
         );
+
+        if program.instructions.len() == 0 {
+            panic!("new - zero len");
+        }
+
         program
     }
 
@@ -157,6 +174,11 @@ impl Program {
         output_register: usize, 
         total_var_registers: usize
     ) {
+        // Leave if code is empty
+        if code.is_empty() {
+            return;
+        }
+
         // Mark the introns of the given program
         Program::mark_introns(code, output_register, total_var_registers);
 
@@ -201,20 +223,37 @@ impl Program {
             eff_regs.sort_unstable();
             eff_regs.dedup();
 
-            // Replace intron with random effective register
-            let mut rng = rand::rng();
-            let new_dst_idx: usize = rng.random_range(..eff_regs.len());
-            let new_dst: u8 = eff_regs[new_dst_idx];
-        
-            // Clear the destination register
-            code[idx].0 &= 0xFF00_FFFF;
+            // Only proceed if there are effective registers to choose from
+            if !eff_regs.is_empty() {
+                // Replace intron with random effective register
+                let mut rng = rand::rng();
+                let new_dst_idx: usize = rng.random_range(..eff_regs.len());
+                let new_dst: u8 = eff_regs[new_dst_idx];
+            
+                // Clear the destination register
+                code[idx].0 &= 0xFF00_FFFF;
 
-            // Replace it with new effective register
-            code[idx].0 |= u32::from(new_dst) << 16;
+                // Replace it with new effective register
+                code[idx].0 |= u32::from(new_dst) << 16;
+            } else {
+                // If there are no effective registers at this position,
+                // make this instruction write to the output register directly
+                // This maintains evolutionary integrity while preventing empty 
+                // programs
+                code[idx].0 &= 0xFF00_FFFF; // Clear destination bits
+                code[idx].0 |= u32::from(
+                    RegisterIndex::try_from(output_register)
+                    .expect("failed to cast")
+                ) << 16;
+            }
         }
 
         // Remark introns
         Program::mark_introns(code, output_register, total_var_registers);
+
+        if code.len() == 0 {
+            panic!("effinit - zero len");
+        }
     }
 
     /// Mark the effective instructions in given code
@@ -294,8 +333,17 @@ impl Program {
         output_reg: usize,
         total_var_regs: usize
     ) {
+        // Create backup 
+        let mut code_clone: Vec<Instruction> = code.clone();
         Program::mark_introns(code, output_reg, total_var_regs);
         code.retain(|inst| inst.0 & 0x8000_0000 != 0);
+
+        // If there is no effective code, send it back as it was.
+        // (Hopefully) Tournament selection will naturally take care
+        // of it
+        if code.len() == 0 {
+            *code = code_clone;
+        }
     }
 
     /// Performs crossover between this instance and given instance
@@ -347,7 +395,7 @@ impl Program {
             self.config.max_seg_len
         );
         let seg_len1: usize = if seg_len_upper1 <= 1 {
-            1
+            seg_len_upper1
         } else {
             rng.random_range(1..=seg_len_upper1) 
         };
@@ -444,7 +492,6 @@ impl Program {
         if rng.random::<f64>() < mutation_type {
             // Macro mutation
             
-            // Generate random index
             let i: usize = rng.random_range(0..prog_len);
             
             // Select between insertion or deletion
@@ -477,7 +524,9 @@ impl Program {
             // Micro mutation
         
         }
-
+        if new_prog.instructions.len() == 0 {
+            panic!("Mutate - Zero length program");
+        }
         new_prog
     }
 }
