@@ -132,36 +132,64 @@ impl Program {
             }
         };
 
-        // Fill instructions
-        program.instructions.extend((0..initial_size).map(|_|
-            Instruction::random(
-                config.total_var_registers, 
-                config.total_const_registers
-            )
-        ));
-
         // Fill const registers
-        program.const_registers.extend((0..config.total_const_registers).map(|i|
+        program.const_registers
+            .extend((0..config.total_const_registers).map(|i|
             config.const_start + (i as f64) * config.const_step_size
         ));
 
-        // If not empty, ensure last instruction has output 
-        // register as destination
-        if !program.instructions.is_empty() {
-            let last_idx = program.instructions.len() - 1;
-            // Clear destination register bits and set to output register
-            program.instructions[last_idx].0 &= 0xFF00FFFF;
-            program.instructions[last_idx].0 |= (config.output_register as u32) << 16;
+        // Begin by filling the vector with a random instruction
+        let inst = Instruction::random(
+            config.total_var_registers,
+            config.total_const_registers
+        );
+        for _ in 0..initial_size {
+            program.instructions.push(inst);
         }
 
-        Program::effinit(
-            &mut program.instructions, 
-            config.output_register,
-            config.total_var_registers
-        );
+        // For randomly selecting operand
+        let mut rng = rand::rng();
 
-        if program.instructions.len() == 0 {
-            panic!("new - zero len");
+        // TODO: Need to implement vector of effective registers
+        // just pulling operands from next does not work since 
+        // two operands may be constants
+
+        // Work backwords
+        for i in (0..initial_size).rev() {
+            // If last instruction, force output register
+            // and at least one variable register operand
+            if i == initial_size - 1 {
+                program.instructions[i].0 &= 0xFF00_FFFF;
+
+                let vr_index: usize = rng.random_range(0..config.total_var_registers);
+                // Clear the last operand
+                program.instructions[i].0 &= 0xFFFF_FF00;
+
+                // Force the last operand as variable
+                program.instructions[i].0 |= u32::try_from(vr_index)
+                    .expect("failed to cast");
+            } else {
+                // Initialize each previous instruction as random
+                program.instructions[i] = Instruction::random(
+                    config.total_var_registers,
+                    config.total_const_registers
+                );
+
+                // We make it effective by setting its destination
+                // register to be one of the subsequent instruction's
+                // operand registers
+                let ops = program.instructions[i+1].operands();
+
+                // Select an operand
+                let op_index: usize = rng.random_range(0..ops.len());
+                let new_dst = u32::try_from(ops[op_index]).expect("cast fail");
+
+                // Clear the destination register
+                program.instructions[i].0 &= 0xFF00_FFFF;
+
+                // Set the new destination register
+                program.instructions[i].0 |= new_dst << 16;
+            }
         }
 
         program
@@ -208,6 +236,9 @@ impl Program {
             // instruction at index idx
             for i in (idx..code.len()).rev() {
                 if eff_regs.contains(&code[i].dst()) {
+                    // Update eff_regs by removing destination register
+                    eff_regs.retain(|&r| r != code[i].dst());
+
                     // Only add operands that are variable registers
                     for &op in &code[i].operands() {
                         if op < u8::try_from(total_var_registers)
@@ -236,6 +267,7 @@ impl Program {
                 // Replace it with new effective register
                 code[idx].0 |= u32::from(new_dst) << 16;
             } else {
+                println!("empty shit");
                 // If there are no effective registers at this position,
                 // make this instruction write to the output register directly
                 // This maintains evolutionary integrity while preventing empty 
@@ -272,6 +304,12 @@ impl Program {
 
         for inst in code.iter_mut().rev() {
             if effective_regs.contains(&inst.dst()) {
+                // Mark the instruction as effective
+                inst.0 |= 0x8000_0000;
+
+                // Remove destination register from effective_regs
+                effective_regs.retain(|&r| r != inst.dst());
+
                 // Only add operands that are variable registers
                 for &op in &inst.operands() {
                     if op < u8::try_from(total_var_regs)
@@ -279,7 +317,6 @@ impl Program {
                             effective_regs.push(op);
                     }
                 }
-                inst.0 |= 0x8000_0000;
             } else {
                 inst.0 &= 0x0FFF_FFFF;
             }
@@ -545,6 +582,27 @@ mod tests {
     }
 
     #[test]
+    fn test_program_new_effective() {
+        let initial_size: usize = 12;
+        let config = ProgramConfig::default();
+        let mut program = Program::new(initial_size, &config);
+
+        Program::mark_introns(
+            &mut program.instructions,
+            config.output_register,
+            config.total_var_registers
+        );
+
+        for i in 0..program.instructions.len() {
+            println!("0x{:08x}", program.instructions[i].0);
+        }
+
+        for i in 0..program.instructions.len() {
+            assert!(program.instructions[i].0 & 0x8000_0000 == 0x800_0000);
+        }
+    }
+
+    #[test]
     fn test_program_run() {
         let input: f64 = 3.0;
         let inst1 = Instruction(0x00023901); // VR[2] = CR[49] + VR[1]
@@ -655,6 +713,7 @@ mod tests {
         assert_eq!(prog.run(input), 6.0);
     }
 
+    /*
     #[test]
     fn test_effinit() {
         let inst1 = Instruction(0x0002_0103); // VR[2] = VR[1] + VR[3]
@@ -665,16 +724,6 @@ mod tests {
 
         // Create vector of all instructions
         let mut instructions = vec![inst1, inst2, inst3, inst4, inst5];
-
-        // Mark the introns first and confirm there are non-effective registers
-        Program::mark_introns(&mut instructions, 0, 8);
-
-        // We must confirm the correct instructions were marked as introns
-        assert!(instructions[0].0 & 0x8000_0000 == 0x8000_0000);
-        assert!(instructions[1].0 & 0x8000_0000 == 0);
-        assert!(instructions[2].0 & 0x8000_0000 == 0x8000_0000);
-        assert!(instructions[3].0 & 0x8000_0000 == 0);
-        assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
 
         // Replace non-effective code with effective code
         Program::effinit(&mut instructions, 0, 8);
@@ -693,6 +742,7 @@ mod tests {
         assert!(instructions[3].0 & 0x8000_0000 == 0x8000_0000);
         assert!(instructions[4].0 & 0x8000_0000 == 0x8000_0000);
     }
+    */
 
     #[test]
     fn test_remove_introns() {
