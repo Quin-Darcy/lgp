@@ -64,7 +64,7 @@ fn main() {
     pop_config.prog_config.total_const_registers = 6;
     pop_config.prog_config.const_start = -3.0;
     pop_config.prog_config.const_step_size = 1.0;
-    pop_config.prog_config.min_prog_len = 1;
+    pop_config.prog_config.min_prog_len = 2;
     let mut pop = Population::new(training_data, validation_data, pop_config);
     pop.evolve();
 }
