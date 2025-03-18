@@ -138,154 +138,22 @@ impl Program {
             config.const_start + (i as f64) * config.const_step_size
         ));
 
-        // Begin by filling the vector with a random instruction
-        let inst = Instruction::random(
-            config.total_var_registers,
-            config.total_const_registers
-        );
-        for _ in 0..initial_size {
-            program.instructions.push(inst);
+        // Early return for empty programs
+        if initial_size == 0 {
+            return program;
         }
 
-        // For randomly selecting operand
         let mut rng = rand::rng();
 
-        // TODO: Need to implement vector of effective registers
-        // just pulling operands from next does not work since 
-        // two operands may be constants
+        // Start with output register in list
+        let mut eff_regs: Vec<RegisterIndex> = vec![
+            RegisterIndex::try_from(config.output_register).expect("cast fail")
+        ];
 
-        // Work backwords
-        for i in (0..initial_size).rev() {
-            // If last instruction, force output register
-            // and at least one variable register operand
-            if i == initial_size - 1 {
-                program.instructions[i].0 &= 0xFF00_FFFF;
-
-                let vr_index: usize = rng.random_range(0..config.total_var_registers);
-                // Clear the last operand
-                program.instructions[i].0 &= 0xFFFF_FF00;
-
-                // Force the last operand as variable
-                program.instructions[i].0 |= u32::try_from(vr_index)
-                    .expect("failed to cast");
-            } else {
-                // Initialize each previous instruction as random
-                program.instructions[i] = Instruction::random(
-                    config.total_var_registers,
-                    config.total_const_registers
-                );
-
-                // We make it effective by setting its destination
-                // register to be one of the subsequent instruction's
-                // operand registers
-                let ops = program.instructions[i+1].operands();
-
-                // Select an operand
-                let op_index: usize = rng.random_range(0..ops.len());
-                let new_dst = u32::try_from(ops[op_index]).expect("cast fail");
-
-                // Clear the destination register
-                program.instructions[i].0 &= 0xFF00_FFFF;
-
-                // Set the new destination register
-                program.instructions[i].0 |= new_dst << 16;
-            }
-        }
-
+        // TODO: Carefully design this part to create a fully
+        // effective program
+        
         program
-    }
-
-    // Ensures all instructions in a program are effective. This is achieved 
-    // by modifying the destination register of the intron.
-    fn effinit(
-        code: &mut [Instruction], 
-        output_register: usize, 
-        total_var_registers: usize
-    ) {
-        // Leave if code is empty
-        if code.is_empty() {
-            return;
-        }
-
-        // Mark the introns of the given program
-        Program::mark_introns(code, output_register, total_var_registers);
-
-        // Get the index of each intron
-        let intron_indices: Vec<usize> = code.iter()
-            .enumerate()    // This gives us the actual indices
-            .filter(|(_, inst)| inst.0 & 0x8000_0000 == 0)  // The introns
-            .map(|(idx, _)| idx) // Isolate the index of the introns
-            .collect(); // Collect them
-        
-        // NOTE: Effective registers are relative to posistion
-        // If you are the second to last instruction, then you
-        // can only be effective if your destination register 
-        // is the output register or coincides with one of the 
-        // operands in the last instruction.
-        
-        // Loop through the introns
-        for idx in intron_indices {
-
-            // Initialize effective registers
-            let mut eff_regs = vec![
-                RegisterIndex::try_from(output_register).expect("failed to cast")
-            ];
-
-            // Step through the code backwards and collect
-            // all effective registers up to the current
-            // instruction at index idx
-            for i in (idx..code.len()).rev() {
-                if eff_regs.contains(&code[i].dst()) {
-                    // Update eff_regs by removing destination register
-                    eff_regs.retain(|&r| r != code[i].dst());
-
-                    // Only add operands that are variable registers
-                    for &op in &code[i].operands() {
-                        if op < u8::try_from(total_var_registers)
-                            .expect("failed to cast") 
-                        {
-                            eff_regs.push(op);
-                        }
-                    }
-                }
-            }
-
-            // Remove duplicates
-            eff_regs.sort_unstable();
-            eff_regs.dedup();
-
-            // Only proceed if there are effective registers to choose from
-            if !eff_regs.is_empty() {
-                // Replace intron with random effective register
-                let mut rng = rand::rng();
-                let new_dst_idx: usize = rng.random_range(..eff_regs.len());
-                let new_dst: u8 = eff_regs[new_dst_idx];
-            
-                // Clear the destination register
-                code[idx].0 &= 0xFF00_FFFF;
-
-                // Replace it with new effective register
-                code[idx].0 |= u32::from(new_dst) << 16;
-            } else {
-                println!("empty shit");
-                // If there are no effective registers at this position,
-                // make this instruction write to the output register directly
-                // This maintains evolutionary integrity while preventing empty 
-                // programs
-                code[idx].0 &= 0xFF00_FFFF; // Clear destination bits
-                code[idx].0 |= u32::from(
-                    RegisterIndex::try_from(output_register)
-                    .expect("failed to cast")
-                ) << 16;
-            }
-        }
-
-        // Remark introns
-        Program::mark_introns(code, output_register, total_var_registers);
-
-        if code.len() == 0 {
-            panic!("effinit - zero len");
-        }
     }
 
     /// Mark the effective instructions in given code
