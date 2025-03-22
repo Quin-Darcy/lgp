@@ -144,15 +144,51 @@ impl Program {
         }
 
         let mut rng = rand::rng();
+        let output_reg = RegisterIndex::try_from(config.ouput_register)
+            .expect("failed to cast");
 
-        // Start with output register in list
-        let mut eff_regs: Vec<RegisterIndex> = vec![
-            RegisterIndex::try_from(config.output_register).expect("cast fail")
-        ];
+        // Force the first instruction to output to the
+        // output register and have at least one var reg
+        let mut last_inst = Instruction::random(
+            config.total_var_registers,
+            config.total_const_registers
+        );
+   
+        // Set destination to output register
+        last_inst.0 &= 0xFF00_FFFF; 
+        last_inst.0 |= u32::from(output_reg) << 16;
 
-        // TODO: Carefully design this part to create a fully
-        // effective program
+        // Ensure at least one operand is a variable register
+        let operands = last_inst.operands();
+        let var_reg_count = operands.iter().filter(|&&op|
+            op < u8::try_from(config.total_var_registers).expect("cast fail")
+        ).count();
+
+        // If no variable register operands, set one
+        if var_reg_count == 0 {
+            // Choose a random variable register that's not the output register
+            let mut var_reg: RegisterIndex;
+            loop {
+                var_reg = rng.random_range(0..config.total_var_registers)
+                    .try_into().expect("Failed to cast");
+                if var_reg != output_reg {
+                    break;
+                }
+            }
         
+            // Set the second operand to this variable register
+            last_inst.0 &= 0xFFFF_FF00; // Clear second operand
+            last_inst.0 |= u32::from(var_reg); // Set second operand
+        }
+
+        // Add the last instruction to the program
+        program.instruction.push(last_inst);
+
+        // Initialize effective registers
+
+        // TODO
+
+    
         program
     }
 
