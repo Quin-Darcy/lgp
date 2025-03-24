@@ -144,7 +144,7 @@ impl Program {
         }
 
         let mut rng = rand::rng();
-        let output_reg = RegisterIndex::try_from(config.ouput_register)
+        let output_reg = RegisterIndex::try_from(config.output_register)
             .expect("failed to cast");
 
         // Force the first instruction to output to the
@@ -182,12 +182,73 @@ impl Program {
         }
 
         // Add the last instruction to the program
-        program.instruction.push(last_inst);
+        program.instructions.push(last_inst);
 
-        // Initialize effective registers
+        let mut eff_regs: Vec<RegisterIndex> = vec![];
+        for &op in &last_inst.operands() {
+            if op < u8::try_from(config.total_var_registers)
+                .expect("cast failed") {
+                eff_regs.push(op);
+            }
+        }
 
-        // TODO
+        // Build remaining instructions
+        for _ in 1..initial_size {
+            // If no effective registers left, create special case
+            if eff_regs.is_empty() {
+                // Create a new effective register
+                let mut new_reg: RegisterIndex;
+                loop {
+                    new_reg = rng.random_range(0..config.total_var_registers)
+                        .try_into().expect("Failed to cast");
+                    if new_reg != output_reg {
+                        break;
+                    }
+                }
+                
+                // Add this to our effective register set
+                eff_regs.push(new_reg);
+            }
+            
+            // Create a new instruction
+            let mut new_inst = Instruction::random(
+                config.total_var_registers,
+                config.total_const_registers
+            );
+            
+            // Select an effective register as the destination
+            let idx = rng.random_range(0..eff_regs.len());
+            let dest_reg = eff_regs[idx];
+            
+            // Set the destination register
+            new_inst.0 &= 0xFF00_FFFF;
+            new_inst.0 |= u32::from(dest_reg) << 16;
+            
+            // Remove this register from our effective set
+            eff_regs.retain(|&r| r != dest_reg);
+            
+            // Add any variable register operands to our effective set
+            for &op in &new_inst.operands() {
+                if op < u8::try_from(config.total_var_registers)
+                    .expect("Failed to cast") {
+                    if !eff_regs.contains(&op) {
+                        eff_regs.push(op);
+                    }
+                }
+            }
+            
+            program.instructions.push(new_inst);
+        }
 
+        // Reverse instructions
+        program.instructions.reverse();
+
+        // Mark effective code
+        Program::mark_introns(
+            &mut program.instructions,
+            config.output_register,
+            config.total_var_registers
+        );
     
         program
     }
@@ -275,7 +336,7 @@ impl Program {
         total_var_regs: usize
     ) {
         // Create backup 
-        let mut code_clone: Vec<Instruction> = code.clone();
+        let code_clone: Vec<Instruction> = code.clone();
         Program::mark_introns(code, output_reg, total_var_regs);
         code.retain(|inst| inst.0 & 0x8000_0000 != 0);
 
