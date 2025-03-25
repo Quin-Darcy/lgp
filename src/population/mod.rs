@@ -119,7 +119,7 @@ impl Population {
 
         // The best is defined as the program with the smallest fitness value
         let training_best_index = smallest_element_index(&fitness_values);
-        let validation_best_index = smallest_element_index(&val_fitness_values);
+        let _validation_best_index = smallest_element_index(&val_fitness_values);
 
         Self {
             programs,
@@ -149,7 +149,7 @@ impl Population {
         // two new programs. Therefore after the number of generations
         // elapsed is equal to have the population size, all original
         // programs in the population will have been replaced.
-        let max_generations = 1000*self.programs.len();
+        let max_generations = 250*self.programs.len();
 
         for i in 0..max_generations {
             println!("Generation {i}:\n{self}");
@@ -157,6 +157,8 @@ impl Population {
             let results: TournamentResult = self.tournament_selection();
             self.update_population(&results);
         }
+
+        println!("{:?}", self.programs[self.training_best_index].instructions);
 
         // Return the best performing program
         self.programs[self.training_best_index].clone()
