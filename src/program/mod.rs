@@ -164,22 +164,14 @@ impl Program {
             op < u8::try_from(config.total_var_registers).expect("cast fail")
         ).count();
 
-        // If no variable register operands, set one
-        if var_reg_count == 0 {
-            // Choose a random variable register that's not the output register
-            let mut var_reg: RegisterIndex;
-            loop {
-                var_reg = rng.random_range(0..config.total_var_registers)
-                    .try_into().expect("Failed to cast");
-                if var_reg != output_reg {
-                    break;
-                }
-            }
-        
-            // Set the second operand to this variable register
-            last_inst.0 &= 0xFFFF_FF00; // Clear second operand
-            last_inst.0 |= u32::from(var_reg); // Set second operand
-        }
+        // Overwrite the last operand to force it to be a variable 
+        // register which is not the output register
+        let var_reg: RegisterIndex = rng
+            .random_range(1..config.total_var_registers)
+            .try_into().expect("failed to cast");
+
+        last_inst.0 &= 0xFFFF_FF00;
+        last_inst.0 |= u32::from(var_reg);
 
         // Add the last instruction to the program
         program.instructions.push(last_inst);
@@ -187,7 +179,7 @@ impl Program {
         let mut eff_regs: Vec<RegisterIndex> = vec![];
         for &op in &last_inst.operands() {
             if op < u8::try_from(config.total_var_registers)
-                .expect("cast failed") {
+                .expect("cast failed") && op != output_reg {
                 eff_regs.push(op);
             }
         }
@@ -223,6 +215,14 @@ impl Program {
             // Set the destination register
             new_inst.0 &= 0xFF00_FFFF;
             new_inst.0 |= u32::from(dest_reg) << 16;
+
+            // TEST: Force last operand to be variable register
+            let var_reg: RegisterIndex = rng
+                .random_range(0..config.total_var_registers)
+                .try_into().expect("failed to cast");
+
+            new_inst.0 &= 0xFFFF_FF00;
+            new_inst.0 |= u32::from(var_reg);
             
             // Remove this register from our effective set
             eff_regs.retain(|&r| r != dest_reg);
