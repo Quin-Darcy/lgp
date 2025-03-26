@@ -2,30 +2,8 @@ use lgp::population::{Population, PopulationConfig};
 
 
 fn main() {
+
     /*
-    let training_data: Vec<(f64, f64)> = vec![
-        (-5.0, 25.0),
-        (-4.0, 16.0),
-        (-3.0, 9.0),
-        (-2.0, 4.0),
-        (-1.0, 1.0),
-        (0.0, 0.0),
-        (1.0, 1.0), 
-        (2.0, 4.0),
-        (3.0, 9.0),
-        (4.0, 16.0),
-        (5.0, 25.0)
-    ];
-
-    let validation_data: Vec<(f64, f64)> = vec![
-        (-10.0, 100.0),
-        (-9.0, 81.0),
-        (-8.0, 64.0),
-        (-7.0, 49.0),
-        (-6.0, 36.0)
-    ];
-    */
-
     let training_data: Vec<(f64, f64)> = vec![
         (-10.0, -351.0),
         (-9.0, -289.0),
@@ -49,6 +27,11 @@ fn main() {
         (9.0, -199.0),
         (10.0, -251.0)
     ];
+    */
+
+    let training_data: Vec<(f64, f64)> = vec![
+(-0.0, -0.0), (0.074, 0.5423), (0.1568, 1.0916), (0.2413, 1.5715), (0.3237, 1.9821), (0.4266, 2.4539), (0.5228, 2.849), (0.6326, 3.1929), (0.7515, 3.5849), (0.881, 3.9547), (1.0262, 4.2873), (1.1746, 4.6064), (1.3437, 4.9127), (1.5564, 5.2404), (1.7859, 5.5233), (2.0649, 5.7718), (2.3959, 6.0119), (2.889, 6.2231), (3.5395, 6.4259), (4.9658, 6.5546), (0.9406, 0.9987), (2.6171, 2.8016), (3.2793, 3.5721), (3.816, 4.0686), (4.2109, 4.5077), (4.1078, 4.7784), (4.5395, 5.0148), (4.7179, 5.2258), (4.7563, 5.3989), (4.9658, 5.5509), (5.1584, 5.7043), (5.1078, 5.8119), (5.2109, 5.9418), (5.2653, 6.0639), (5.5064, 6.1602), (5.4422, 6.2495), (5.7179, 6.3361), (5.7179, 6.4193), (5.7179, 6.4873), (5.5735, 6.5584)
+    ];
 
     let validation_data: Vec<(f64, f64)> = vec![
         (11.0, -309.0),
@@ -61,10 +44,11 @@ fn main() {
     ];
 
     let mut pop_config = PopulationConfig::default();
-    pop_config.prog_config.total_const_registers = 6;
-    pop_config.prog_config.const_start = -3.0;
-    pop_config.prog_config.const_step_size = 1.0;
-    pop_config.prog_config.min_prog_len = 2;
+    pop_config.prog_config.total_const_registers = 5;
+    pop_config.prog_config.const_start = 0.0;
+    pop_config.prog_config.const_step_size = 0.01;
+    pop_config.prog_config.total_var_registers = 6;
+    pop_config.prog_config.min_prog_len = 4;
     let mut pop = Population::new(training_data, validation_data, pop_config);
     pop.evolve();
 }
