@@ -39,13 +39,13 @@ pub struct PopulationConfig {
 impl Default for PopulationConfig {
     fn default() -> Self {
         PopulationConfig {
-            population_size: 1000,
-            max_init_prog_size: 8,
-            crossover_rate: 0.78,
-            sa_step_size: 0.1,
-            learning_rate: 0.10,
-            reproduction_rate: 0.80,
-            tournament_size: 4,
+            population_size: 2000,
+            max_init_prog_size: 6,
+            crossover_rate: 0.68,
+            sa_step_size: 0.03,
+            learning_rate: 0.2,
+            reproduction_rate: 0.98,
+            tournament_size: 23,
             prog_config: ProgramConfig::default()
         }
     }
@@ -149,7 +149,7 @@ impl Population {
         // two new programs. Therefore after the number of generations
         // elapsed is equal to have the population size, all original
         // programs in the population will have been replaced.
-        let max_generations = 250*self.programs.len();
+        let max_generations = 1000*self.programs.len();
 
         for i in 0..max_generations {
             println!("Generation {i}:\n{self}");
@@ -158,7 +158,7 @@ impl Population {
             self.update_population(&results);
         }
 
-        println!("{:?}", self.programs[self.training_best_index].instructions);
+        println!("{}", self.programs[self.training_best_index]);
 
         // Return the best performing program
         self.programs[self.training_best_index].clone()

@@ -26,6 +26,7 @@ mod operator;
 pub mod instruction;
 
 use std::cmp;
+use std::fmt;
 use rand::Rng;
 use instruction::Instruction;
 
@@ -533,6 +534,59 @@ impl Program {
     }
 }
 
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Program with {} instructions:", self.instructions.len())?;
+        
+        for (i, inst) in self.instructions.iter().enumerate() {
+            // Check if instruction is effective (has the high bit set)
+            let is_effective = inst.0 & 0x8000_0000 != 0;
+            
+            // Get components of the instruction
+            let operator = inst.operator();
+            let dst = inst.dst();
+            let operands = inst.operands();
+            
+            // Format operands appropriately (var or const register)
+            let format_operand = |op: RegisterIndex| -> String {
+                if op < (self.config.total_var_registers as u8) {
+                    format!("V[{}]", op)
+                } else {
+                    format!(
+                        "{:.3}", 
+                        self.const_registers[op as usize - self.config.total_var_registers]
+                    )
+                }
+            };
+            
+            // Format the operator as a string
+            let op_str = match operator {
+                operator::Operator::Add => "+",
+                operator::Operator::Sub => "-",
+                operator::Operator::Mul => "*",
+                operator::Operator::Div => "/",
+            };
+            
+            // Format the full instruction
+            let instruction_str = format!(
+                "V[{}] = {} {} {}", 
+                dst, 
+                format_operand(operands[0]), 
+                op_str, 
+                format_operand(operands[1])
+            );
+            
+            // Format the line with or without effective marking
+            if is_effective {
+                writeln!(f, "{:3}: {}", i, instruction_str)?;
+            } else {
+                writeln!(f, "{:3}: // {}", i, instruction_str)?;
+            }
+        }
+        
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {
