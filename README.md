@@ -1,6 +1,6 @@
 # lgp
 
-![LGP Evolution](media/lgp_evolution.gif)
+![LGP Evolution](media/lgp_evolution1.gif)
 
 This is a simple Rust library which implements [linear genetic programming](https://en.wikipedia.org/wiki/Linear_genetic_programming). 
 
