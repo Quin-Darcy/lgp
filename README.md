@@ -22,7 +22,7 @@ Currently needs a lot of work to make it faster. Many generations are needed to 
 
 ### TODOs
 - [ ] Re-write library to support variable input and output registers (this would make the use cases far more vast - e.g., time series)
-- [ ]Perform testing to see which methods are most efficient (e.g., to allow introns or not), adding structural intron removal, etc
-- [ ]Update and complete documentation
-- [ ]Update and improve experience for user to set the configuration values
-- [X]**TOP PRIORITY**: Add sick GIF showing evolution of single-variable polynomial regression graph. Each frame is the graph of the current best program from generation 1 to the last generation.
+- [ ] Perform testing to see which methods are most efficient (e.g., to allow introns or not), adding structural intron removal, etc
+- [ ] Update and complete documentation
+- [ ] Update and improve experience for user to set the configuration values
+- [X] **TOP PRIORITY**: Add sick GIF showing evolution of single-variable polynomial regression graph. Each frame is the graph of the current best program from generation 1 to the last generation.
